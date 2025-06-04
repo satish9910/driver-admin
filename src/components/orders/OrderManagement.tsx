@@ -13,74 +13,69 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Search, Filter, MoreHorizontal, Eye, Package } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, Filter, MoreHorizontal, Eye, Package, Truck, CheckCircle } from "lucide-react";
+import { StatsCard } from "@/components/dashboard/StatsCard";
+import { TrendingUp, ShoppingCart, Users, DollarSign } from "lucide-react";
 
 const orders = [
   {
     id: "#12345",
     customer: "John Doe",
     vendor: "TechStore Pro",
-    items: 2,
     amount: "$299.00",
-    status: "processing",
-    paymentStatus: "paid",
+    status: "placed",
     date: "2024-01-15",
-    address: "123 Main St, NYC",
-    phone: "+1 234 567 8900",
+    items: 2,
+    paymentMethod: "Credit Card",
   },
   {
     id: "#12346",
     customer: "Jane Smith",
     vendor: "Fashion Hub",
-    items: 1,
     amount: "$159.99",
     status: "shipped",
-    paymentStatus: "paid",
     date: "2024-01-15",
-    address: "456 Oak Ave, LA",
-    phone: "+1 234 567 8901",
+    items: 1,
+    paymentMethod: "PayPal",
   },
   {
     id: "#12347",
     customer: "Bob Johnson",
-    vendor: "Home Decor Plus",
-    items: 3,
+    vendor: "Home Decor",
     amount: "$89.50",
     status: "delivered",
-    paymentStatus: "paid",
     date: "2024-01-14",
-    address: "789 Pine St, Chicago",
-    phone: "+1 234 567 8902",
+    items: 3,
+    paymentMethod: "Credit Card",
   },
   {
     id: "#12348",
     customer: "Alice Brown",
     vendor: "Sports World",
-    items: 1,
     amount: "$249.99",
-    status: "pending",
-    paymentStatus: "pending",
+    status: "processing",
     date: "2024-01-14",
-    address: "321 Elm St, Boston",
-    phone: "+1 234 567 8903",
+    items: 1,
+    paymentMethod: "Cash on Delivery",
   },
 ];
 
 export function OrderManagement() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState("all");
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -90,31 +85,62 @@ export function OrderManagement() {
         return "bg-blue-100 text-blue-800";
       case "processing":
         return "bg-yellow-100 text-yellow-800";
-      case "pending":
-        return "bg-gray-100 text-gray-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
+      case "placed":
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const getPaymentStatusColor = (status: string) => {
-    return status === "paid" 
-      ? "bg-green-100 text-green-800" 
-      : "bg-yellow-100 text-yellow-800";
-  };
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.vendor.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || order.status === statusFilter;
+    const matchesPayment = paymentFilter === "all" || order.paymentMethod === paymentFilter;
+    return matchesSearch && matchesStatus && matchesPayment;
+  });
 
-  const filteredOrders = orders.filter(order =>
-    order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    order.vendor.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const orderStatuses = ["pending", "processing", "shipped", "delivered", "cancelled"];
+  const paymentMethods = [...new Set(orders.map(o => o.paymentMethod))];
 
   return (
     <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Orders"
+          value="1,234"
+          change="+12% from last month"
+          changeType="positive"
+          icon={ShoppingCart}
+          iconColor="text-blue-600"
+        />
+        <StatsCard
+          title="Revenue"
+          value="$45,231"
+          change="+8% from last month"
+          changeType="positive"
+          icon={DollarSign}
+          iconColor="text-green-600"
+        />
+        <StatsCard
+          title="Pending Orders"
+          value="23"
+          change="-5% from last month"
+          changeType="positive"
+          icon={Package}
+          iconColor="text-yellow-600"
+        />
+        <StatsCard
+          title="Customers"
+          value="8,942"
+          change="+18% from last month"
+          changeType="positive"
+          icon={Users}
+          iconColor="text-purple-600"
+        />
+      </div>
+
       {/* Header with Search and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-4">
@@ -127,52 +153,60 @@ export function OrderManagement() {
               className="w-64 pl-10"
             />
           </div>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Status: {statusFilter === "all" ? "All" : statusFilter}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("placed")}>
+                Placed
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("processing")}>
+                Processing
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("shipped")}>
+                Shipped
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("delivered")}>
+                Delivered
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-2" />
+                Payment: {paymentFilter === "all" ? "All" : paymentFilter}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setPaymentFilter("all")}>
+                All
+              </DropdownMenuItem>
+              {paymentMethods.map(method => (
+                <DropdownMenuItem key={method} onClick={() => setPaymentFilter(method)}>
+                  {method}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline">Export</Button>
-          <Button variant="outline">
-            <Package className="h-4 w-4 mr-2" />
-            Bulk Ship
-          </Button>
+          <Button variant="outline">Bulk Actions</Button>
         </div>
-      </div>
-
-      {/* Order Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">127</div>
-            <p className="text-xs text-muted-foreground">Pending Orders</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">64</div>
-            <p className="text-xs text-muted-foreground">Processing</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">89</div>
-            <p className="text-xs text-muted-foreground">Shipped</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">Delivered</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Orders Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Order Management</CardTitle>
+          <CardTitle>Order Management ({filteredOrders.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -181,8 +215,8 @@ export function OrderManagement() {
                 <TableHead>Order ID</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead>Vendor</TableHead>
-                <TableHead>Items</TableHead>
                 <TableHead>Amount</TableHead>
+                <TableHead>Items</TableHead>
                 <TableHead>Payment</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -194,108 +228,48 @@ export function OrderManagement() {
                   <TableCell className="font-medium">{order.id}</TableCell>
                   <TableCell>{order.customer}</TableCell>
                   <TableCell>{order.vendor}</TableCell>
-                  <TableCell>{order.items}</TableCell>
                   <TableCell>{order.amount}</TableCell>
+                  <TableCell>{order.items}</TableCell>
+                  <TableCell>{order.paymentMethod}</TableCell>
                   <TableCell>
-                    <Badge className={getPaymentStatusColor(order.paymentStatus)}>
-                      {order.paymentStatus}
+                    <Badge className={getStatusColor(order.status)}>
+                      {order.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Badge className={getStatusColor(order.status)} variant="secondary">
-                          {order.status}
-                        </Badge>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {orderStatuses.map((status) => (
-                          <DropdownMenuItem key={status}>
-                            Update to {status}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
+                    <div className="flex items-center justify-end space-x-2">
+                      {order.status === "placed" && (
+                        <Button size="sm" variant="outline" className="text-blue-600 border-blue-600">
+                          <Package className="h-4 w-4 mr-1" />
+                          Process
                         </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <DropdownMenuItem onSelect={(e) => {
-                              e.preventDefault();
-                              setSelectedOrder(order);
-                            }}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              View Details
-                            </DropdownMenuItem>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
-                            </DialogHeader>
-                            {selectedOrder && (
-                              <div className="space-y-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <h3 className="font-medium mb-2">Customer Information</h3>
-                                    <div className="space-y-1 text-sm">
-                                      <p><strong>Name:</strong> {selectedOrder.customer}</p>
-                                      <p><strong>Phone:</strong> {selectedOrder.phone}</p>
-                                      <p><strong>Address:</strong> {selectedOrder.address}</p>
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <h3 className="font-medium mb-2">Order Information</h3>
-                                    <div className="space-y-1 text-sm">
-                                      <p><strong>Vendor:</strong> {selectedOrder.vendor}</p>
-                                      <p><strong>Date:</strong> {selectedOrder.date}</p>
-                                      <p><strong>Amount:</strong> {selectedOrder.amount}</p>
-                                    </div>
-                                  </div>
-                                </div>
-                                
-                                <div>
-                                  <h3 className="font-medium mb-2">Order Timeline</h3>
-                                  <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                      <span className="text-sm">Order Placed - {selectedOrder.date}</span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                      <span className="text-sm text-gray-500">Order Confirmed</span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                      <span className="text-sm text-gray-500">Shipped</span>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                                      <span className="text-sm text-gray-500">Delivered</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </DialogContent>
-                        </Dialog>
-                        <DropdownMenuItem>
-                          Print Label
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          Send Update
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          Cancel Order
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                      )}
+                      {order.status === "processing" && (
+                        <Button size="sm" variant="outline" className="text-green-600 border-green-600">
+                          <Truck className="h-4 w-4 mr-1" />
+                          Ship
+                        </Button>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Track Order
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Contact Customer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

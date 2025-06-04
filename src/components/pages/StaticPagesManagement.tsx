@@ -28,53 +28,57 @@ import {
 import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-const products = [
+const pages = [
   {
     id: 1,
-    name: "iPhone 15 Pro",
-    category: "Electronics",
-    vendor: "TechStore Pro",
-    stock: 45,
-    price: "$999.00",
+    title: "About Us",
+    slug: "about-us",
     status: "published",
-    image: "/placeholder.svg",
+    lastModified: "2024-01-15",
+    author: "Admin",
+    views: 1234,
   },
   {
     id: 2,
-    name: "Summer Dress",
-    category: "Fashion",
-    vendor: "Fashion Hub",
-    stock: 23,
-    price: "$59.99",
+    title: "Privacy Policy",
+    slug: "privacy-policy",
     status: "published",
-    image: "/placeholder.svg",
+    lastModified: "2024-01-10",
+    author: "Admin",
+    views: 856,
   },
   {
     id: 3,
-    name: "Gaming Chair",
-    category: "Furniture",
-    vendor: "Home Decor",
-    stock: 0,
-    price: "$299.99",
-    status: "out_of_stock",
-    image: "/placeholder.svg",
+    title: "Terms of Service",
+    slug: "terms-of-service",
+    status: "published",
+    lastModified: "2024-01-08",
+    author: "Admin",
+    views: 723,
   },
   {
     id: 4,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    vendor: "TechStore Pro",
-    stock: 67,
-    price: "$149.99",
+    title: "Refund Policy",
+    slug: "refund-policy",
     status: "draft",
-    image: "/placeholder.svg",
+    lastModified: "2024-01-05",
+    author: "Admin",
+    views: 0,
+  },
+  {
+    id: 5,
+    title: "Shipping Information",
+    slug: "shipping-info",
+    status: "published",
+    lastModified: "2024-01-03",
+    author: "Admin",
+    views: 421,
   },
 ];
 
-export function ProductManagement() {
+export function StaticPagesManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const getStatusColor = (status: string) => {
@@ -83,22 +87,19 @@ export function ProductManagement() {
         return "bg-green-100 text-green-800";
       case "draft":
         return "bg-yellow-100 text-yellow-800";
-      case "out_of_stock":
-        return "bg-red-100 text-red-800";
+      case "archived":
+        return "bg-gray-100 text-gray-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.vendor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || product.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+  const filteredPages = pages.filter(page => {
+    const matchesSearch = page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         page.slug.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || page.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
-
-  const categories = [...new Set(products.map(p => p.category))];
 
   return (
     <div className="space-y-6">
@@ -108,7 +109,7 @@ export function ProductManagement() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search pages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64 pl-10"
@@ -131,67 +132,40 @@ export function ProductManagement() {
               <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
                 Draft
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("out_of_stock")}>
-                Out of Stock
+              <DropdownMenuItem onClick={() => setStatusFilter("archived")}>
+                Archived
               </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Category: {categoryFilter === "all" ? "All" : categoryFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setCategoryFilter("all")}>
-                All
-              </DropdownMenuItem>
-              {categories.map(category => (
-                <DropdownMenuItem key={category} onClick={() => setCategoryFilter(category)}>
-                  {category}
-                </DropdownMenuItem>
-              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Bulk Upload</Button>
-          <Button variant="outline">Export</Button>
+          <Button variant="outline">Analytics</Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Product
+                Add Page
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
+                <DialogTitle>Add New Page</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="productName">Product Name</Label>
-                  <Input id="productName" placeholder="Enter product name" />
+                  <Label htmlFor="pageTitle">Page Title</Label>
+                  <Input id="pageTitle" placeholder="Enter page title" />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" placeholder="Enter category" />
-                </div>
-                <div>
-                  <Label htmlFor="price">Price</Label>
-                  <Input id="price" type="number" placeholder="0.00" />
-                </div>
-                <div>
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input id="stock" type="number" placeholder="0" />
+                  <Label htmlFor="slug">Slug</Label>
+                  <Input id="slug" placeholder="Enter page slug" />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
                   <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Product
+                    Create Page
                   </Button>
                 </div>
               </div>
@@ -200,46 +174,37 @@ export function ProductManagement() {
         </div>
       </div>
 
-      {/* Products Table */}
+      {/* Pages Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Product Management ({filteredProducts.length})</CardTitle>
+          <CardTitle>Static Pages ({filteredPages.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead>Slug</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Views</TableHead>
+                <TableHead>Last Modified</TableHead>
+                <TableHead>Author</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id} className="hover:bg-gray-50">
+              {filteredPages.map((page) => (
+                <TableRow key={page.id} className="hover:bg-gray-50">
+                  <TableCell className="font-medium">{page.title}</TableCell>
+                  <TableCell className="text-gray-500">/{page.slug}</TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-10 h-10 rounded-md object-cover bg-gray-100"
-                      />
-                      <div className="font-medium">{product.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.vendor}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>{product.price}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(product.status)}>
-                      {product.status.replace("_", " ")}
+                    <Badge className={getStatusColor(page.status)}>
+                      {page.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>{page.views}</TableCell>
+                  <TableCell>{page.lastModified}</TableCell>
+                  <TableCell>{page.author}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -250,7 +215,7 @@ export function ProductManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Product
+                          Preview
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="mr-2 h-4 w-4" />

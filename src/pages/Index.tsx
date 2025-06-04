@@ -7,6 +7,11 @@ import { CustomerManagement } from "@/components/customers/CustomerManagement";
 import { VendorManagement } from "@/components/vendors/VendorManagement";
 import { ProductManagement } from "@/components/products/ProductManagement";
 import { OrderManagement } from "@/components/orders/OrderManagement";
+import { CategoryManagement } from "@/components/categories/CategoryManagement";
+import { BannerManagement } from "@/components/banners/BannerManagement";
+import { TransactionManagement } from "@/components/transactions/TransactionManagement";
+import { StaticPagesManagement } from "@/components/pages/StaticPagesManagement";
+import { SettingsManagement } from "@/components/settings/SettingsManagement";
 
 const sectionTitles = {
   dashboard: { title: "Dashboard", subtitle: "Overview of your eCommerce platform" },
@@ -37,35 +42,15 @@ const Index = () => {
       case "orders":
         return <OrderManagement />;
       case "categories":
-        return (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Category Management - Coming Soon</p>
-          </div>
-        );
+        return <CategoryManagement />;
       case "banners":
-        return (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Banner Management - Coming Soon</p>
-          </div>
-        );
+        return <BannerManagement />;
       case "transactions":
-        return (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Transaction Management - Coming Soon</p>
-          </div>
-        );
+        return <TransactionManagement />;
       case "pages":
-        return (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Static Pages Management - Coming Soon</p>
-          </div>
-        );
+        return <StaticPagesManagement />;
       case "settings":
-        return (
-          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-            <p className="text-gray-600">Settings - Coming Soon</p>
-          </div>
-        );
+        return <SettingsManagement />;
       default:
         return <Dashboard />;
     }
