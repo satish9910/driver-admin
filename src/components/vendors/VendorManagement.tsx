@@ -1,5 +1,6 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,77 +21,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, MoreHorizontal, Eye, Check, X } from "lucide-react";
 
-const vendors = [
-  {
-    id: 1,
-    storeName: "TechStore Pro",
-    owner: "Michael Chen",
-    email: "michael@techstore.com",
-    status: "approved",
-    products: 145,
-    totalSales: "$12,450",
-    joinDate: "2023-05-10",
-    commission: "15%",
-  },
-  {
-    id: 2,
-    storeName: "Fashion Hub",
-    owner: "Sarah Wilson",
-    email: "sarah@fashionhub.com",
-    status: "pending",
-    products: 0,
-    totalSales: "$0",
-    joinDate: "2024-01-15",
-    commission: "12%",
-  },
-  {
-    id: 3,
-    storeName: "Home Decor Plus",
-    owner: "David Brown",
-    email: "david@homedecor.com",
-    status: "approved",
-    products: 89,
-    totalSales: "$8,920",
-    joinDate: "2023-09-22",
-    commission: "18%",
-  },
-  {
-    id: 4,
-    storeName: "Sports World",
-    owner: "Jennifer Lee",
-    email: "jennifer@sportsworld.com",
-    status: "rejected",
-    products: 0,
-    totalSales: "$0",
-    joinDate: "2024-01-12",
-    commission: "0%",
-  },
-];
+const getStatusColor = (status) => {
+  switch (status.toLowerCase()) {
+    case "active":
+      return "bg-green-100 text-green-800";
+    case "pending":
+      return "bg-yellow-100 text-yellow-800";
+    case "rejected":
+      return "bg-red-100 text-red-800";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
+};
 
 export function VendorManagement() {
+  const [vendors, setVendors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-yellow-100 text-yellow-800";
-      case "rejected":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  useEffect(() => {
+    const fetchVendors = async () => {
+      try {
+        const response = await axios.get(
+          "http://103.189.173.127:3000/api/admin/all-vendors",
+          {
+            headers: {
+              Authorization:
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc1MDQwMDc2MSwiZXhwIjoxNzUxMDA1NTYxfQ.2fO4KuPYckmnxjWB8yv3aCWuF0bORCEcO6rBDqZUoHs",
+            },
+          }
+        );
+        if (response.data.success) {
+          setVendors(response.data.vendors);
+        }
+      } catch (error) {
+        console.error("Failed to fetch vendors:", error);
+      }
+    };
 
-  const filteredVendors = vendors.filter(vendor =>
-    vendor.storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    vendor.owner.toLowerCase().includes(searchTerm.toLowerCase())
+    fetchVendors();
+  }, []);
+
+  const filteredVendors = vendors.filter((vendor) =>
+    vendor.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="space-y-6">
-      {/* Header with Search and Filters */}
+    <div className="space-y-6 p-6">
+      {/* Header with Search and Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-4">
           <div className="relative">
@@ -113,21 +90,6 @@ export function VendorManagement() {
         </div>
       </div>
 
-      {/* Pending Applications Alert */}
-      <Card className="border-yellow-200 bg-yellow-50">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium text-yellow-800">Pending Vendor Applications</h3>
-              <p className="text-sm text-yellow-700">You have 1 vendor application waiting for approval</p>
-            </div>
-            <Button size="sm" className="bg-yellow-600 hover:bg-yellow-700">
-              Review Applications
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Vendors Table */}
       <Card>
         <CardHeader>
@@ -137,42 +99,45 @@ export function VendorManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Store</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Products</TableHead>
-                <TableHead>Total Sales</TableHead>
-                <TableHead>Commission</TableHead>
+                <TableHead>Vendor Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredVendors.map((vendor) => (
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{vendor.storeName}</div>
-                      <div className="text-sm text-gray-500">{vendor.email}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{vendor.owner}</TableCell>
-                  <TableCell>{vendor.products}</TableCell>
-                  <TableCell>{vendor.totalSales}</TableCell>
-                  <TableCell>{vendor.commission}</TableCell>
+                  <TableCell className="font-medium">{vendor.name}</TableCell>
+                  <TableCell>{vendor.email}</TableCell>
+                  <TableCell>{vendor.role}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(vendor.status)}>
                       {vendor.status}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    {new Date(vendor.createdAt).toLocaleDateString()}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
                       {vendor.status === "pending" && (
                         <>
-                          <Button size="sm" variant="outline" className="text-green-600 border-green-600 hover:bg-green-50">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                          >
                             <Check className="h-4 w-4 mr-1" />
                             Approve
                           </Button>
-                          <Button size="sm" variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 border-red-600 hover:bg-red-50"
+                          >
                             <X className="h-4 w-4 mr-1" />
                             Reject
                           </Button>
@@ -187,17 +152,13 @@ export function VendorManagement() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>
                             <Eye className="mr-2 h-4 w-4" />
-                            View Store
+                            View Details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            Edit Commission
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            View Wallet
-                          </DropdownMenuItem>
-                          {vendor.status === "approved" && (
+                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem>View Wallet</DropdownMenuItem>
+                          {vendor.status === "ACTIVE" && (
                             <DropdownMenuItem className="text-red-600">
-                              Suspend Vendor
+                              Suspend
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

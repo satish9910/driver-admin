@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,73 +18,34 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, Download, Eye } from "lucide-react";
+import Cookies from "js-cookie";
 
-const transactions = [
-  {
-    id: "TXN001",
-    type: "credit",
-    entity: "TechStore Pro",
-    entityType: "vendor",
-    amount: 1250.00,
-    description: "Commission payment",
-    status: "completed",
-    date: "2024-01-15",
-    orderId: "#12345",
-  },
-  {
-    id: "TXN002",
-    type: "debit",
-    entity: "John Doe",
-    entityType: "customer",
-    amount: 299.99,
-    description: "Order payment",
-    status: "completed",
-    date: "2024-01-15",
-    orderId: "#12346",
-  },
-  {
-    id: "TXN003",
-    type: "credit",
-    entity: "Fashion Hub",
-    entityType: "vendor",
-    amount: 450.75,
-    description: "Commission payment",
-    status: "pending",
-    date: "2024-01-14",
-    orderId: "#12347",
-  },
-  {
-    id: "TXN004",
-    type: "debit",
-    entity: "Alice Brown",
-    entityType: "customer",
-    amount: 89.50,
-    description: "Refund processed",
-    status: "completed",
-    date: "2024-01-14",
-    orderId: "#12348",
-  },
-];
+interface Transaction {
+  id: number;
+  userId: number;
+  order_id: string;
+  payment_id: string;
+  signature: string;
+  amount: number;
+  currency: string;
+  product_id: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function TransactionManagement() {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "credit":
-        return "bg-green-100 text-green-800";
-      case "debit":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  const token = Cookies.get("admin_token");
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
+    switch (status.toLowerCase()) {
+      case "success":
         return "bg-green-100 text-green-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800";
@@ -96,14 +56,77 @@ export function TransactionManagement() {
     }
   };
 
-  const filteredTransactions = transactions.filter(transaction => {
-    const matchesSearch = transaction.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         transaction.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || transaction.status === statusFilter;
-    return matchesSearch && matchesType && matchesStatus;
+  const fetchTransactions = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "http://103.189.173.127:3000/api/admin/get-all-transactions?limit=10&page=1",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch transactions");
+      }
+
+      const data = await response.json();
+      setTransactions(data.data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
+
+  const filteredTransactions = transactions.filter((transaction) => {
+    const matchesSearch =
+      transaction.order_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.payment_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.amount.toString().includes(searchTerm);
+    const matchesStatus =
+      statusFilter === "all" ||
+      transaction.status.toLowerCase() === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
   });
+
+  const calculateTotals = () => {
+    const totalAmount = transactions.reduce(
+      (sum, transaction) => sum + transaction.amount,
+      0
+    );
+    const successCount = transactions.filter(
+      (t) => t.status === "success"
+    ).length;
+
+    return {
+      totalAmount,
+      successCount,
+      totalTransactions: transactions.length,
+    };
+  };
+
+  const { totalAmount, successCount, totalTransactions } = calculateTotals();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        Loading transactions...
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -111,25 +134,31 @@ export function TransactionManagement() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">$12,450</div>
-            <p className="text-sm text-gray-600">Total Credits</p>
+            <div className="text-2xl font-bold">
+              ₹{totalAmount.toLocaleString()}
+            </div>
+            <p className="text-sm text-gray-600">Total Amount</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-red-600">$8,920</div>
-            <p className="text-sm text-gray-600">Total Debits</p>
+            <div className="text-2xl font-bold text-green-600">
+              {successCount}
+            </div>
+            <p className="text-sm text-gray-600">Successful Transactions</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">$3,530</div>
-            <p className="text-sm text-gray-600">Net Balance</p>
+            <div className="text-2xl font-bold">
+              {totalTransactions - successCount}
+            </div>
+            <p className="text-sm text-gray-600">Other Transactions</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">156</div>
+            <div className="text-2xl font-bold">{totalTransactions}</div>
             <p className="text-sm text-gray-600">Total Transactions</p>
           </CardContent>
         </Card>
@@ -151,25 +180,6 @@ export function TransactionManagement() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
-                Type: {typeFilter === "all" ? "All" : typeFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setTypeFilter("all")}>
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTypeFilter("credit")}>
-                Credit
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTypeFilter("debit")}>
-                Debit
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
                 Status: {statusFilter === "all" ? "All" : statusFilter}
               </Button>
             </DropdownMenuTrigger>
@@ -177,8 +187,8 @@ export function TransactionManagement() {
               <DropdownMenuItem onClick={() => setStatusFilter("all")}>
                 All
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("completed")}>
-                Completed
+              <DropdownMenuItem onClick={() => setStatusFilter("success")}>
+                Success
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setStatusFilter("pending")}>
                 Pending
@@ -210,41 +220,38 @@ export function TransactionManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Transaction ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Entity</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Payment ID</TableHead>
+                <TableHead>User ID</TableHead>
                 <TableHead>Amount</TableHead>
-                <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
+                <TableHead>Product ID</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{transaction.id}</TableCell>
-                  <TableCell>
-                    <Badge className={getTypeColor(transaction.type)}>
-                      {transaction.type}
-                    </Badge>
+                  <TableCell className="font-medium">
+                    {transaction.id}
                   </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{transaction.entity}</div>
-                      <div className="text-sm text-gray-500">{transaction.entityType}</div>
-                    </div>
+                  <TableCell>{transaction.order_id}</TableCell>
+                  <TableCell>{transaction.payment_id}</TableCell>
+                  <TableCell>{transaction.userId}</TableCell>
+                  <TableCell className="text-green-600">
+                    ₹{transaction.amount.toLocaleString()}
                   </TableCell>
-                  <TableCell className={transaction.type === "credit" ? "text-green-600" : "text-red-600"}>
-                    {transaction.type === "credit" ? "+" : "-"}${transaction.amount.toFixed(2)}
-                  </TableCell>
-                  <TableCell>{transaction.description}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(transaction.status)}>
                       {transaction.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{transaction.date}</TableCell>
+                  <TableCell>
+                    {new Date(transaction.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>{transaction.product_id}</TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon">
                       <Eye className="h-4 w-4" />

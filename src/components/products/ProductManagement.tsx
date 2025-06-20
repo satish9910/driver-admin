@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,80 +24,141 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 
-const products = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro",
-    category: "Electronics",
-    vendor: "TechStore Pro",
-    stock: 45,
-    price: "$999.00",
-    status: "published",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 2,
-    name: "Summer Dress",
-    category: "Fashion",
-    vendor: "Fashion Hub",
-    stock: 23,
-    price: "$59.99",
-    status: "published",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 3,
-    name: "Gaming Chair",
-    category: "Furniture",
-    vendor: "Home Decor",
-    stock: 0,
-    price: "$299.99",
-    status: "out_of_stock",
-    image: "/placeholder.svg",
-  },
-  {
-    id: 4,
-    name: "Wireless Headphones",
-    category: "Electronics",
-    vendor: "TechStore Pro",
-    stock: 67,
-    price: "$149.99",
-    status: "draft",
-    image: "/placeholder.svg",
-  },
-];
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  mainCategory: {
+    name: string;
+  };
+  subCategory: {
+    name: string;
+  };
+  vendor: {
+    name: string;
+  };
+  variants: {
+    price: string;
+    stock: number;
+    images: string[];
+    attributes: {
+      key: string;
+      value: string;
+    }[];
+  }[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function ProductManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 10;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "published":
-        return "bg-green-100 text-green-800";
-      case "draft":
-        return "bg-yellow-100 text-yellow-800";
-      case "out_of_stock":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch(
+          "http://103.189.173.127:3000/api/admin/get-all-products",
+          {
+            headers: {
+              Authorization:
+                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc1MDQwMDc2MSwiZXhwIjoxNzUxMDA1NTYxfQ.2fO4KuPYckmnxjWB8yv3aCWuF0bORCEcO6rBDqZUoHs",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const data = await response.json();
+        setProducts(data.data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const getStatusColor = (stock: number) => {
+    if (stock > 0) {
+      return "bg-green-100 text-green-800";
+    } else {
+      return "bg-red-100 text-red-800";
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.vendor.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || product.status === statusFilter;
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+  const getStatusText = (stock: number) => {
+    return stock > 0 ? "In Stock" : "Out of Stock";
+  };
+
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "in_stock" && product.variants[0].stock > 0) ||
+      (statusFilter === "out_of_stock" && product.variants[0].stock <= 0);
+    const matchesCategory =
+      categoryFilter === "all" || product.mainCategory.name === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  const categories = [...new Set(products.map(p => p.category))];
+  // Get current products
+  const indexOfLastProduct = currentPage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filteredProducts.slice(
+    indexOfFirstProduct,
+    indexOfLastProduct
+  );
+
+  // Change page
+  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const nextPage = () => {
+    if (currentPage < Math.ceil(filteredProducts.length / productsPerPage)) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const categories = [...new Set(products.map((p) => p.mainCategory.name))];
+  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  if (loading) {
+    return <div>Loading products...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -118,18 +178,20 @@ export function ProductManagement() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
-                Status: {statusFilter === "all" ? "All" : statusFilter}
+                Status:{" "}
+                {statusFilter === "all"
+                  ? "All"
+                  : statusFilter === "in_stock"
+                  ? "In Stock"
+                  : "Out of Stock"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => setStatusFilter("all")}>
                 All
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("published")}>
-                Published
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
-                Draft
+              <DropdownMenuItem onClick={() => setStatusFilter("in_stock")}>
+                In Stock
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setStatusFilter("out_of_stock")}>
                 Out of Stock
@@ -147,8 +209,11 @@ export function ProductManagement() {
               <DropdownMenuItem onClick={() => setCategoryFilter("all")}>
                 All
               </DropdownMenuItem>
-              {categories.map(category => (
-                <DropdownMenuItem key={category} onClick={() => setCategoryFilter(category)}>
+              {categories.map((category) => (
+                <DropdownMenuItem
+                  key={category}
+                  onClick={() => setCategoryFilter(category)}
+                >
                   {category}
                 </DropdownMenuItem>
               ))}
@@ -187,7 +252,10 @@ export function ProductManagement() {
                   <Input id="stock" type="number" placeholder="0" />
                 </div>
                 <div className="flex justify-end space-x-2">
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={() => setIsAddDialogOpen(false)}>
@@ -211,6 +279,7 @@ export function ProductManagement() {
               <TableRow>
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Subcategory</TableHead>
                 <TableHead>Vendor</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Price</TableHead>
@@ -219,25 +288,32 @@ export function ProductManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
+              {currentProducts.map((product) => (
                 <TableRow key={product.id} className="hover:bg-gray-50">
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-10 h-10 rounded-md object-cover bg-gray-100"
-                      />
+                      {product.variants[0]?.images?.length > 0 && (
+                        <img
+                          src={`http://103.189.173.127:3000${product.variants[0].images[0]}`}
+                          alt={product.name}
+                          className="w-10 h-10 rounded-md object-cover bg-gray-100"
+                        />
+                      )}
                       <div className="font-medium">{product.name}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.vendor}</TableCell>
-                  <TableCell>{product.stock}</TableCell>
-                  <TableCell>{product.price}</TableCell>
+                  <TableCell>{product.mainCategory.name}</TableCell>
+                  <TableCell>{product.subCategory.name}</TableCell>
+                  <TableCell>{product.vendor.name}</TableCell>
+                  <TableCell>{product.variants[0]?.stock || 0}</TableCell>
+                  <TableCell>${product.variants[0]?.price || "0.00"}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(product.status)}>
-                      {product.status.replace("_", " ")}
+                    <Badge
+                      className={getStatusColor(
+                        product.variants[0]?.stock || 0
+                      )}
+                    >
+                      {getStatusText(product.variants[0]?.stock || 0)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -267,6 +343,47 @@ export function ProductManagement() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {filteredProducts.length > productsPerPage && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-500">
+                Showing {indexOfFirstProduct + 1} to{" "}
+                {Math.min(indexOfLastProduct, filteredProducts.length)} of{" "}
+                {filteredProducts.length} products
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (number) => (
+                    <Button
+                      key={number}
+                      variant={currentPage === number ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => paginate(number)}
+                    >
+                      {number}
+                    </Button>
+                  )
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

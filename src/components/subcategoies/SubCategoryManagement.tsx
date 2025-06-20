@@ -34,9 +34,12 @@ import {
   Eye,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import Cookies from "js-cookie";
 
-interface Category {
+interface SubCategory {
   id: number;
+  mainCategoryId: number;
   name: string;
   slug: string;
   description: string;
@@ -44,53 +47,41 @@ interface Category {
   createdAt: string;
   updatedAt: string;
 }
-import Cookies from "js-cookie";
 
-export function CategoryManagement() {
+export function SubCategoryManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const token = Cookies.get("admin_token");
-
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchSubCategories = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-main-categories",
+          "http://103.189.173.127:3000/api/admin/get-all-sub-categories",
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch categories");
-        }
-
         const data = await response.json();
         if (data.success) {
-          setCategories(data.categories);
-        } else {
-          throw new Error(data.message || "Failed to fetch categories");
+          setSubCategories(data.subCategories);
         }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
+      } catch (error) {
+        console.error("Error fetching sub-categories:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCategories();
-  }, []);
+    fetchSubCategories();
+  }, [token]);
 
-  const filteredCategories = categories.filter((category) => {
+  const filteredCategories = subCategories.filter((category) => {
     const matchesSearch =
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       category.description?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -104,16 +95,25 @@ export function CategoryManagement() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        Loading categories...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex justify-center items-center h-64 text-red-500">
-        {error}
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-10 w-24" />
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              <Skeleton className="h-6 w-48" />
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -139,17 +139,20 @@ export function CategoryManagement() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Category
+                Add Sub-Category
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Category</DialogTitle>
+                <DialogTitle>Add New Sub-Category</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="categoryName">Category Name</Label>
-                  <Input id="categoryName" placeholder="Enter category name" />
+                  <Label htmlFor="categoryName">Sub-Category Name</Label>
+                  <Input
+                    id="categoryName"
+                    placeholder="Enter sub-category name"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
@@ -163,7 +166,7 @@ export function CategoryManagement() {
                     Cancel
                   </Button>
                   <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Category
+                    Add Sub-Category
                   </Button>
                 </div>
               </div>
@@ -175,17 +178,17 @@ export function CategoryManagement() {
       {/* Categories Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Categories ({filteredCategories.length})</CardTitle>
+          <CardTitle>Sub-Categories ({filteredCategories.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Main Category ID</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
-                <TableHead>Image</TableHead>
                 <TableHead>Created</TableHead>
-                <TableHead>Updated</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -193,25 +196,14 @@ export function CategoryManagement() {
               {filteredCategories.map((category) => (
                 <TableRow key={category.id} className="hover:bg-gray-50">
                   <TableCell>
-                    <div>
-                      <div className="font-medium">{category.name}</div>
-                      <div className="text-sm text-gray-500">
-                        {category.description}
-                      </div>
-                    </div>
+                    <div className="font-medium">{category.name}</div>
+                  </TableCell>
+                  <TableCell>{category.mainCategoryId}</TableCell>
+                  <TableCell className="max-w-xs truncate">
+                    {category.description}
                   </TableCell>
                   <TableCell>{category.slug}</TableCell>
-                  <TableCell>
-                    {category.imgUrl && (
-                      <img
-                        src={`http://103.189.173.127:3000${category.imgUrl}`}
-                        alt={category.name}
-                        className="h-10 w-10 object-cover rounded"
-                      />
-                    )}
-                  </TableCell>
                   <TableCell>{formatDate(category.createdAt)}</TableCell>
-                  <TableCell>{formatDate(category.updatedAt)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -222,7 +214,7 @@ export function CategoryManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
-                          View Products
+                          View
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="mr-2 h-4 w-4" />

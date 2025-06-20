@@ -1,22 +1,62 @@
+import React, { useState } from "react";
+import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
-import { useState } from "react";
+// Replace these with your actual UI components or use plain HTML
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff } from "lucide-react";
 
-export function LoginPage() {
+const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login attempt:", { email, password, rememberMe });
+    setError("");
+
+    try {
+      const formData = new URLSearchParams();
+      formData.append("email", email);
+      formData.append("password", password);
+
+      const response = await fetch(
+        "http://103.189.173.127:3000/api/public/admin-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: formData.toString(),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok && data.token) {
+        // Save token in cookies
+        Cookies.set("admin_token", data.token, {
+          expires: rememberMe ? 7 : undefined,
+          secure: true,
+          sameSite: "Lax",
+        });
+
+        // Redirect to /index
+        navigate("/index");
+      } else {
+        setError(data?.message || "Invalid credentials.");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Something went wrong.");
+    }
   };
 
   return (
@@ -34,6 +74,9 @@ export function LoginPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
+              {error && (
+                <p className="text-sm text-red-500 text-center">{error}</p>
+              )}
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -57,19 +100,17 @@ export function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </Button>
+                  </button>
                 </div>
               </div>
 
@@ -78,15 +119,17 @@ export function LoginPage() {
                   <Checkbox
                     id="remember"
                     checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setRememberMe(checked === true)
+                    }
                   />
                   <Label htmlFor="remember" className="text-sm">
                     Remember me
                   </Label>
                 </div>
-                <Button variant="link" className="text-sm p-0">
+                <button type="button" className="text-sm text-blue-600">
                   Forgot password?
-                </Button>
+                </button>
               </div>
 
               <Button type="submit" className="w-full">
@@ -96,7 +139,7 @@ export function LoginPage() {
 
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Button variant="link" className="p-0">
                   Contact Administrator
                 </Button>
@@ -111,4 +154,6 @@ export function LoginPage() {
       </div>
     </div>
   );
-}
+};
+
+export default LoginPage;
