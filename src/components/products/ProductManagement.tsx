@@ -324,9 +324,13 @@ export function ProductManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            (window.location.href = `/productdetails/${product.id}`)
+                          }
+                        >
                           <Eye className="mr-2 h-4 w-4" />
-                          View Product
+                          View Profile
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="mr-2 h-4 w-4" />

@@ -150,9 +150,13 @@ export function VendorManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              (window.location.href = `/vendorprofile/${vendor.id}`)
+                            }
+                          >
                             <Eye className="mr-2 h-4 w-4" />
-                            View Details
+                            View Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem>Edit</DropdownMenuItem>
                           <DropdownMenuItem>View Wallet</DropdownMenuItem>
