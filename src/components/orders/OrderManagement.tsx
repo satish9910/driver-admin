@@ -345,9 +345,13 @@ export function OrderManagement() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                (window.location.href = `/orderdetails/${order.id}`)
+                              }
+                            >
                               <Eye className="mr-2 h-4 w-4" />
-                              View Details
+                              Order Details
                             </DropdownMenuItem>
                             <DropdownMenuItem>Track Order</DropdownMenuItem>
                             <DropdownMenuItem>

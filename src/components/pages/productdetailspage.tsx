@@ -70,16 +70,16 @@ const ProductdetailsPage = () => {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       {/* Header */}
-      <Header title="Product Details" />
+      {/* <Header title="Product Details" /> */}
 
       <div className="flex">
         {/* Sidebar */}
-        <Sidebar
+        {/* <Sidebar
           activeSection="products"
           onSectionChange={(section) =>
             console.log(`Section changed to: ${section}`)
           }
-        />
+        /> */}
 
         {/* Main Content */}
         <main className="flex-1 container mx-auto px-6 py-12">
