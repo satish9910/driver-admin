@@ -17,7 +17,7 @@ const VendorProfile = () => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          `http://103.189.173.127:3000/api/admin/get-vendor/${vendorId}`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-vendor/${vendorId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -41,7 +41,7 @@ const VendorProfile = () => {
     setUpdatingStatus(true);
     try {
       const response = await axios.put(
-        `http://103.189.173.127:3000/api/admin/update-vendor-status`,
+        `${import.meta.env.VITE_BASE_UR}admin/update-vendor-status`,
         new URLSearchParams({ id: vendorId }),
         {
           headers: {

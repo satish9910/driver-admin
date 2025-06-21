@@ -20,6 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, MoreHorizontal, Eye, Check, X } from "lucide-react";
+import Cookies from "js-cookie";
 
 const getStatusColor = (status) => {
   switch (status.toLowerCase()) {
@@ -37,16 +38,16 @@ const getStatusColor = (status) => {
 export function VendorManagement() {
   const [vendors, setVendors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const token = Cookies.get("admin_token");
 
   useEffect(() => {
     const fetchVendors = async () => {
       try {
         const response = await axios.get(
-          "http://103.189.173.127:3000/api/admin/all-vendors",
+          `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
           {
             headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc1MDQwMDc2MSwiZXhwIjoxNzUxMDA1NTYxfQ.2fO4KuPYckmnxjWB8yv3aCWuF0bORCEcO6rBDqZUoHs",
+              Authorization: `Bearer ${token}`,
             },
           }
         );

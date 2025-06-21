@@ -60,7 +60,7 @@ export function CategoryManagement() {
     const fetchCategories = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-main-categories",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -182,7 +182,7 @@ export function CategoryManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Slug</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Updated</TableHead>
@@ -195,6 +195,10 @@ export function CategoryManagement() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{category.name}</div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
                       <div className="text-sm text-gray-500">
                         {category.description}
                       </div>
@@ -204,7 +208,9 @@ export function CategoryManagement() {
                   <TableCell>
                     {category.imgUrl && (
                       <img
-                        src={`http://103.189.173.127:3000${category.imgUrl}`}
+                        src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                          category.imgUrl
+                        }`}
                         alt={category.name}
                         className="h-10 w-10 object-cover rounded"
                       />

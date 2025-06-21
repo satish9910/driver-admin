@@ -28,7 +28,7 @@ const LoginPage = () => {
       formData.append("password", password);
 
       const response = await fetch(
-        "http://103.189.173.127:3000/api/public/admin-login",
+        `${import.meta.env.VITE_BASE_UR}/public/admin-login`,
         {
           method: "POST",
           headers: {

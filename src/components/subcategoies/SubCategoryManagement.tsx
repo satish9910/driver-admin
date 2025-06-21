@@ -60,7 +60,7 @@ export function SubCategoryManagement() {
     const fetchSubCategories = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-sub-categories",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

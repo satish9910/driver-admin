@@ -27,7 +27,7 @@ const AddProductManagement = () => {
 
         // Fetch main categories
         const mainCategoriesResponse = await axios.get(
-          "http://103.189.173.127:3000/api/admin/get-all-main-categories",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -38,7 +38,7 @@ const AddProductManagement = () => {
 
         // Fetch sub categories
         const subCategoriesResponse = await axios.get(
-          "http://103.189.173.127:3000/api/admin/get-all-sub-categories",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -49,7 +49,7 @@ const AddProductManagement = () => {
 
         // Fetch vendors
         const vendorsResponse = await axios.get(
-          "http://103.189.173.127:3000/api/admin/all-vendors",
+          `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -123,7 +123,7 @@ const AddProductManagement = () => {
 
       const token = Cookies.get("admin_token");
       await axios.post(
-        "http://103.189.173.127:3000/api/admin/add-product",
+        `${import.meta.env.VITE_BASE_UR}admin/add-product`,
         formData,
         {
           headers: {

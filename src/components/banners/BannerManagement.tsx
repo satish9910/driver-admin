@@ -55,7 +55,7 @@ export function BannerManagement() {
     const fetchBanners = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-banners",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-banners`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -255,7 +255,7 @@ export function BannerManagement() {
             <CardContent>
               <div className="space-y-3">
                 <img
-                  src={`http://103.189.173.127:3000${banner.imgUrl}`}
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${banner.imgUrl}`}
                   alt={banner.title}
                   className="w-full h-32 object-cover rounded-md bg-gray-100"
                 />

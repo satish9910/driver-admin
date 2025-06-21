@@ -19,21 +19,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, MoreHorizontal, Eye, Mail } from "lucide-react";
+import Cookies from "js-cookie";
 
 export function CustomerManagement() {
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const token = Cookies.get("admin_token");
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await axios.get(
-          "http://103.189.173.127:3000/api/admin/all-users",
+          `${import.meta.env.VITE_BASE_UR}admin/all-users`,
           {
             headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc1MDQwMDc2MSwiZXhwIjoxNzUxMDA1NTYxfQ.2fO4KuPYckmnxjWB8yv3aCWuF0bORCEcO6rBDqZUoHs",
+              Authorization: `Bearer ${token}`,
             },
           }
         );

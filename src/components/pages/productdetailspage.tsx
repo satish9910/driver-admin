@@ -17,7 +17,7 @@ const ProductdetailsPage = () => {
     const fetchProduct = async () => {
       try {
         const response = await fetch(
-          `http://103.189.173.127:3000/api/admin/get-product/${productId}`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-product/${productId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -100,7 +100,9 @@ const ProductdetailsPage = () => {
             <div className="lg:w-1/2 mb-10 lg:mb-0">
               <div className="bg-gray-50 p-8 flex items-center justify-center h-96 mb-4">
                 <img
-                  src={`http://103.189.173.127:3000${variant.images[selectedImage]}`}
+                  src={`${import.meta.env.VITE_BASE_UR_IMG}${
+                    variant.images[selectedImage]
+                  }`}
                   alt={product.name}
                   className="max-h-full max-w-full object-contain"
                 />
@@ -115,7 +117,7 @@ const ProductdetailsPage = () => {
                     }`}
                   >
                     <img
-                      src={`http://103.189.173.127:3000${image}`}
+                      src={`${import.meta.env.VITE_BASE_UR_IMG}${image}`}
                       alt={`${product.name} thumbnail ${index}`}
                       className="max-h-full max-w-full object-contain"
                     />

@@ -99,7 +99,7 @@ export function OrderManagement() {
     const fetchOrders = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-orders",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -78,7 +78,7 @@ export function ProductManagement() {
     const fetchProducts = async () => {
       try {
         const response = await fetch(
-          "http://103.189.173.127:3000/api/admin/get-all-products",
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-products`,
           {
             headers: {
               Authorization:
@@ -294,7 +294,9 @@ export function ProductManagement() {
                     <div className="flex items-center space-x-3">
                       {product.variants[0]?.images?.length > 0 && (
                         <img
-                          src={`http://103.189.173.127:3000${product.variants[0].images[0]}`}
+                          src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                            product.variants[0].images[0]
+                          }`}
                           alt={product.name}
                           className="w-10 h-10 rounded-md object-cover bg-gray-100"
                         />

@@ -14,7 +14,7 @@ const UserProfile = () => {
     const fetchUserData = async () => {
       try {
         const response = await axios.get(
-          `http://103.189.173.127:3000/api/admin/get-user/${userId}`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-user/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

@@ -60,7 +60,9 @@ export function TransactionManagement() {
     try {
       setLoading(true);
       const response = await fetch(
-        "http://103.189.173.127:3000/api/admin/get-all-transactions?limit=10&page=1",
+        `${
+          import.meta.env.VITE_BASE_UR
+        }admin/get-all-transactions?limit=10&page=1`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
