@@ -122,7 +122,7 @@ const VendorProfile = () => {
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
               <div className="flex items-center mb-4 md:mb-0">
-                <div className="relative">
+                {/* <div className="relative">
                   <img
                     src={"https://via.placeholder.com/150"}
                     alt="Profile"
@@ -141,7 +141,7 @@ const VendorProfile = () => {
                       </span>
                     </div>
                   </div>
-                </div>
+                </div> */}
                 <div className="ml-6">
                   <h1 className="text-2xl font-bold text-gray-800">
                     {userData.name}
@@ -221,7 +221,7 @@ const VendorProfile = () => {
                     </>
                   )}
                 </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
+                {/* <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-5 w-5 mr-2"
@@ -242,7 +242,7 @@ const VendorProfile = () => {
                     <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                   </svg>
                   Edit Profile
-                </button>
+                </button> */}
               </div>
             </div>
 

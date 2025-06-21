@@ -78,19 +78,19 @@ const UserProfile = () => {
         {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
           <div className="flex items-center mb-4 md:mb-0">
-            <div className="relative">
+            {/* <div className="relative">
               <img
                 src={"https://via.placeholder.com/150"}
                 alt="Profile"
                 className="w-24 h-24 rounded-full object-cover border-4 border-blue-100"
               />
-            </div>
+            </div> */}
             <div className="ml-6">
               <h1 className="text-2xl font-bold text-gray-800">
                 {userData.name}
               </h1>
               <p className="text-gray-600">{userData.email}</p>
-              <span
+              {/* <span
                 className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
                   userData.role === "ADMIN"
                     ? "bg-purple-100 text-purple-800"
@@ -98,10 +98,10 @@ const UserProfile = () => {
                 }`}
               >
                 {userData.role}
-              </span>
+              </span> */}
             </div>
           </div>
-          <div className="flex space-x-3">
+          {/* <div className="flex space-x-3">
             <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +124,7 @@ const UserProfile = () => {
               </svg>
               Edit Profile
             </button>
-          </div>
+          </div> */}
         </div>
 
         {/* Stats Section */}

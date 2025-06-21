@@ -10,15 +10,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Bell, Search, Settings, User } from "lucide-react";
-import { Link } from "react-router-dom"; // Changed from next/link to react-router-dom
+import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie"; // Make sure to install js-cookie if not already
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
-  isLoggedIn?: boolean;
 }
 
-export function Header({ title, subtitle, isLoggedIn = false }: HeaderProps) {
+export function Header({ title, subtitle }: HeaderProps) {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    // Check for token in cookies when component mounts
+    const token = Cookies.get("admin_token"); // Replace 'authToken' with your actual cookie name
+    setIsLoggedIn(!!token);
+  }, []);
+
   return (
     <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
       <div>
@@ -80,15 +89,24 @@ export function Header({ title, subtitle, isLoggedIn = false }: HeaderProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              {/* <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 Settings
+              </DropdownMenuItem> */}
+              <DropdownMenuItem
+                onClick={() => {
+                  Cookies.remove("admin_token"); // Remove the token on logout
+                  setIsLoggedIn(false);
+                }}
+              >
+                Logout
               </DropdownMenuItem>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : (
-          <Button variant="default">Login</Button>
+          <Button variant="default" asChild>
+            <Link to="/">Login</Link>
+          </Button>
         )}
       </div>
     </div>
