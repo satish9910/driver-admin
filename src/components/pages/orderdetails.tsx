@@ -14,7 +14,7 @@ const OrderDetails = () => {
     const fetchOrderDetails = async () => {
       try {
         const response = await axios.get(
-          `http:///api/admin/get-order/${orderId}`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-order/${orderId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

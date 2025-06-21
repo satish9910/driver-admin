@@ -50,9 +50,23 @@ export function CategoryManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentCategory, setCurrentCategory] = useState<Category | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    description: "",
+    image: null as File | null,
+  });
+  const [addFormData, setAddFormData] = useState({
+    name: "",
+    description: "",
+    image: null as File | null,
+  });
+  const [imagePreview, setImagePreview] = useState("");
+  const [addImagePreview, setAddImagePreview] = useState("");
 
   const token = Cookies.get("admin_token");
 
@@ -102,6 +116,161 @@ export function CategoryManagement() {
     return date.toLocaleDateString();
   };
 
+  const handleEditClick = (category: Category) => {
+    setCurrentCategory(category);
+    setEditFormData({
+      name: category.name,
+      description: category.description,
+      image: null,
+    });
+    if (category.imgUrl) {
+      setImagePreview(`${import.meta.env.VITE_BASE_URL_IMG}${category.imgUrl}`);
+    } else {
+      setImagePreview("");
+    }
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData({
+      ...editFormData,
+      [name]: value,
+    });
+  };
+
+  const handleAddFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAddFormData({
+      ...addFormData,
+      [name]: value,
+    });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setEditFormData({
+        ...editFormData,
+        image: file,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAddImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setAddFormData({
+        ...addFormData,
+        image: file,
+      });
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAddImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!currentCategory) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("id", currentCategory.id.toString());
+      formData.append("name", editFormData.name);
+      formData.append("description", editFormData.description);
+      if (editFormData.image) {
+        formData.append("image", editFormData.image);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/update-main-category`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update category");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setCategories((prevCategories) =>
+          prevCategories.map((cat) =>
+            cat.id === currentCategory.id ? data.category : cat
+          )
+        );
+        setIsEditDialogOpen(false);
+        alert("Category updated successfully");
+      } else {
+        throw new Error(data.message || "Failed to update category");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "An unknown error occurred");
+    }
+  };
+
+  const handleAddCategory = async () => {
+    if (!addFormData.name) {
+      alert("Category name is required");
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("name", addFormData.name);
+      formData.append("description", addFormData.description);
+      if (addFormData.image) {
+        formData.append("image", addFormData.image);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/add-main-category`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add category");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setCategories((prevCategories) => [...prevCategories, data.category]);
+        setIsAddDialogOpen(false);
+        setAddFormData({
+          name: "",
+          description: "",
+          image: null,
+        });
+        setAddImagePreview("");
+        alert("Category added successfully");
+      } else {
+        throw new Error(data.message || "Failed to add category");
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "An unknown error occurred");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -149,22 +318,53 @@ export function CategoryManagement() {
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="categoryName">Category Name</Label>
-                  <Input id="categoryName" placeholder="Enter category name" />
+                  <Input
+                    id="categoryName"
+                    name="name"
+                    value={addFormData.name}
+                    onChange={handleAddFormChange}
+                    placeholder="Enter category name"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Input id="description" placeholder="Enter description" />
+                  <Input
+                    id="description"
+                    name="description"
+                    value={addFormData.description}
+                    onChange={handleAddFormChange}
+                    placeholder="Enter description"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="image">Category Image</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAddImageChange}
+                  />
+                  {addImagePreview && (
+                    <div className="mt-2">
+                      <img
+                        src={addImagePreview}
+                        alt="Preview"
+                        className="h-20 w-20 object-cover rounded"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
+                    onClick={() => {
+                      setIsAddDialogOpen(false);
+                      setAddImagePreview("");
+                    }}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Category
-                  </Button>
+                  <Button onClick={handleAddCategory}>Add Category</Button>
                 </div>
               </div>
             </DialogContent>
@@ -183,6 +383,7 @@ export function CategoryManagement() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
+                <TableHead>Slug</TableHead>
                 <TableHead>Image</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Updated</TableHead>
@@ -226,15 +427,64 @@ export function CategoryManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        {/* <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
                           View Products
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        </DropdownMenuItem> */}
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(category)}
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={async () => {
+                            if (
+                              confirm(
+                                "Are you sure you want to delete this category?"
+                              )
+                            ) {
+                              try {
+                                const response = await fetch(
+                                  `${
+                                    import.meta.env.VITE_BASE_UR
+                                  }admin/delete-main-category/${category.id}`,
+                                  {
+                                    method: "DELETE",
+                                    headers: {
+                                      Authorization: `Bearer ${token}`,
+                                    },
+                                  }
+                                );
+
+                                if (!response.ok) {
+                                  throw new Error("Failed to delete category");
+                                }
+
+                                const data = await response.json();
+                                if (data.success) {
+                                  setCategories((prevCategories) =>
+                                    prevCategories.filter(
+                                      (cat) => cat.id !== category.id
+                                    )
+                                  );
+                                  alert("Category deleted successfully");
+                                } else {
+                                  throw new Error(
+                                    data.message || "Failed to delete category"
+                                  );
+                                }
+                              } catch (err) {
+                                alert(
+                                  err instanceof Error
+                                    ? err.message
+                                    : "An unknown error occurred"
+                                );
+                              }
+                            }
+                          }}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -247,6 +497,64 @@ export function CategoryManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">Category Name</Label>
+              <Input
+                id="edit-name"
+                name="name"
+                value={editFormData.name}
+                onChange={handleEditFormChange}
+                placeholder="Enter category name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                name="description"
+                value={editFormData.description}
+                onChange={handleEditFormChange}
+                placeholder="Enter description"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-image">Category Image</Label>
+              <Input
+                id="edit-image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+              />
+              {imagePreview && (
+                <div className="mt-2">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="h-20 w-20 object-cover rounded"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateCategory}>Update Category</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

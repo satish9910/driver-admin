@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -26,6 +27,8 @@ import {
   Eye,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import Cookies from "js-cookie";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Banner {
   id: number;
@@ -40,50 +43,67 @@ interface Banner {
   updatedAt: string;
 }
 
-import Cookies from "js-cookie";
-
 export function BannerManagement() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<number | "all">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [currentBanner, setCurrentBanner] = useState<Banner | null>(null);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = Cookies.get("admin_token");
 
+  // Form state for add/edit
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    type: "",
+    catId: "",
+    subCatId: "",
+    status: "1",
+    image: null as File | null,
+  });
+
   useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BASE_UR}admin/get-all-banners`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch banners");
-        }
-
-        const data = await response.json();
-        if (data.success) {
-          setBanners(data.data);
-        } else {
-          throw new Error(data.message || "Failed to fetch banners");
-        }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBanners();
+    if (token) {
+      fetchBanners();
+    } else {
+      setError("You are not authorized to view this page.");
+    }
   }, [token]);
+
+  const fetchBanners = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-banners`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch banners");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setBanners(data.data);
+      } else {
+        throw new Error(data.message || "Failed to fetch banners");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusText = (status: number) => {
     return status === 1 ? "active" : "inactive";
@@ -93,6 +113,184 @@ export function BannerManagement() {
     return status === 1
       ? "bg-green-100 text-green-800"
       : "bg-gray-100 text-gray-800";
+  };
+
+  const handleDelete = async (bannerId: number) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/delete-banner/${bannerId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete banner");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Banner deleted successfully",
+          variant: "default",
+        });
+        fetchBanners();
+      } else {
+        throw new Error(data.message || "Failed to delete banner");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to delete banner",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditClick = (banner: Banner) => {
+    setCurrentBanner(banner);
+    setFormData({
+      title: banner.title,
+      description: banner.description,
+      type: banner.type,
+      catId: banner.catId.toString(),
+      subCatId: banner.subCatId.toString(),
+      status: banner.status.toString(),
+      image: null,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSubmit = async () => {
+    if (!currentBanner) return;
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("catId", formData.catId);
+      formDataToSend.append("type", formData.type);
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/update-banner/${
+          currentBanner.id
+        }`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formDataToSend,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update banner");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Banner updated successfully",
+          variant: "default",
+        });
+        setIsEditDialogOpen(false);
+        fetchBanners();
+      } else {
+        throw new Error(data.message || "Failed to update banner");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to update banner",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddSubmit = async () => {
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("description", formData.description);
+      formDataToSend.append("catId", formData.catId);
+      formDataToSend.append("subCatId", formData.subCatId);
+      formDataToSend.append("type", formData.type);
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/add-banner`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formDataToSend,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to add banner");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Banner added successfully",
+          variant: "default",
+        });
+        setIsAddDialogOpen(false);
+        setFormData({
+          title: "",
+          description: "",
+          type: "",
+          catId: "",
+          subCatId: "",
+          status: "1",
+          image: null,
+        });
+        fetchBanners();
+      } else {
+        throw new Error(data.message || "Failed to add banner");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to add banner",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({
+        ...prev,
+        image: e.target.files![0],
+      }));
+    }
   };
 
   const filteredBanners = banners.filter((banner) => {
@@ -170,50 +368,75 @@ export function BannerManagement() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="bannerTitle">Banner Title</Label>
-                  <Input id="bannerTitle" placeholder="Enter banner title" />
+                  <Label htmlFor="title">Banner Title</Label>
+                  <Input
+                    id="title"
+                    name="title"
+                    placeholder="Enter banner title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                  />
                 </div>
                 <div>
                   <Label htmlFor="type">Type</Label>
                   <Input
                     id="type"
+                    name="type"
                     placeholder="Enter banner type (e.g., home)"
+                    value={formData.type}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
                   <Input
                     id="description"
+                    name="description"
                     placeholder="Enter banner description"
+                    value={formData.description}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div>
                   <Label htmlFor="catId">Category ID</Label>
                   <Input
                     id="catId"
+                    name="catId"
                     type="number"
                     placeholder="Enter category ID"
+                    value={formData.catId}
+                    onChange={handleInputChange}
                   />
                 </div>
                 <div>
                   <Label htmlFor="subCatId">Subcategory ID</Label>
                   <Input
                     id="subCatId"
+                    name="subCatId"
                     type="number"
                     placeholder="Enter subcategory ID"
+                    value={formData.subCatId}
+                    onChange={handleInputChange}
                   />
                 </div>
-                <div className="flex justify-end space-x-2">
+                <div>
+                  <Label htmlFor="image">Banner Image</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+                <DialogFooter>
                   <Button
                     variant="outline"
                     onClick={() => setIsAddDialogOpen(false)}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Banner
-                  </Button>
-                </div>
+                  <Button onClick={handleAddSubmit}>Add Banner</Button>
+                </DialogFooter>
               </div>
             </DialogContent>
           </Dialog>
@@ -240,11 +463,14 @@ export function BannerManagement() {
                       <Eye className="mr-2 h-4 w-4" />
                       Preview
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleEditClick(banner)}>
                       <Edit className="mr-2 h-4 w-4" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem
+                      className="text-red-600"
+                      onClick={() => handleDelete(banner.id)}
+                    >
                       <Trash2 className="mr-2 h-4 w-4" />
                       Delete
                     </DropdownMenuItem>
@@ -278,6 +504,114 @@ export function BannerManagement() {
           </Card>
         ))}
       </div>
+
+      {/* Edit Banner Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Banner</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-title">Banner Title</Label>
+              <Input
+                id="edit-title"
+                name="title"
+                placeholder="Enter banner title"
+                value={formData.title}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-type">Type</Label>
+              <Input
+                id="edit-type"
+                name="type"
+                placeholder="Enter banner type (e.g., home)"
+                value={formData.type}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-description">Description</Label>
+              <Input
+                id="edit-description"
+                name="description"
+                placeholder="Enter banner description"
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-catId">Category ID</Label>
+              <Input
+                id="edit-catId"
+                name="catId"
+                type="number"
+                placeholder="Enter category ID"
+                value={formData.catId}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-subCatId">Subcategory ID</Label>
+              <Input
+                id="edit-subCatId"
+                name="subCatId"
+                type="number"
+                placeholder="Enter subcategory ID"
+                value={formData.subCatId}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-status">Status</Label>
+              <select
+                id="edit-status"
+                name="status"
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+                className="w-full p-2 border rounded"
+              >
+                <option value="1">Active</option>
+                <option value="0">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="edit-image">Banner Image</Label>
+              <Input
+                id="edit-image"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+              {currentBanner && (
+                <div className="mt-2">
+                  <p className="text-sm text-gray-500">Current Image:</p>
+                  <img
+                    src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                      currentBanner.imgUrl
+                    }`}
+                    alt="Current banner"
+                    className="w-32 h-20 object-cover mt-1"
+                  />
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditSubmit}>Save Changes</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

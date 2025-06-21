@@ -36,6 +36,24 @@ import {
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import Cookies from "js-cookie";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SubCategory {
   id: number;
@@ -48,18 +66,43 @@ interface SubCategory {
   updatedAt: string;
 }
 
+interface MainCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  imgUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function SubCategoryManagement() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    id: "",
+    mainCategoryId: "",
+    name: "",
+    description: "",
+    image: null as File | null,
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const token = Cookies.get("admin_token");
+
   useEffect(() => {
-    const fetchSubCategories = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(
+        setLoading(true);
+        // Fetch sub-categories
+        const subCatResponse = await fetch(
           `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
           {
             headers: {
@@ -67,19 +110,211 @@ export function SubCategoryManagement() {
             },
           }
         );
-        const data = await response.json();
-        if (data.success) {
-          setSubCategories(data.subCategories);
+        const subCatData = await subCatResponse.json();
+        if (subCatData.success) {
+          setSubCategories(subCatData.subCategories);
+        }
+
+        // Fetch main categories
+        const mainCatResponse = await fetch(
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const mainCatData = await mainCatResponse.json();
+        if (mainCatData.success) {
+          setMainCategories(mainCatData.categories);
         }
       } catch (error) {
-        console.error("Error fetching sub-categories:", error);
+        console.error("Error fetching data:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch categories",
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSubCategories();
+    fetchData();
   }, [token]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData((prev) => ({
+        ...prev,
+        image: e.target.files![0],
+      }));
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.mainCategoryId || !formData.name) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Main category and name are required",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("mainCategoryId", formData.mainCategoryId);
+      formDataToSend.append("name", formData.name);
+      formDataToSend.append("description", formData.description);
+      if (formData.image) {
+        formDataToSend.append("image", formData.image);
+      }
+
+      const endpoint = formData.id
+        ? `${import.meta.env.VITE_BASE_UR}admin/update-sub-category`
+        : `${import.meta.env.VITE_BASE_UR}admin/add-sub-category`;
+
+      if (formData.id) {
+        formDataToSend.append("id", formData.id);
+      }
+
+      const response = await fetch(endpoint, {
+        method: formData.id ? "PUT" : "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formDataToSend,
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: formData.id
+            ? "Sub-category updated successfully"
+            : "Sub-category added successfully",
+        });
+        // Refresh the sub-categories list
+        const subCatResponse = await fetch(
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const subCatData = await subCatResponse.json();
+        if (subCatData.success) {
+          setSubCategories(subCatData.subCategories);
+        }
+        setIsAddDialogOpen(false);
+        setIsEditDialogOpen(false);
+        setFormData({
+          id: "",
+          mainCategoryId: "",
+          name: "",
+          description: "",
+          image: null,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description:
+            data.message ||
+            `Failed to ${formData.id ? "update" : "add"} sub-category`,
+        });
+      }
+    } catch (error) {
+      console.error(
+        `Error ${formData.id ? "updating" : "adding"} sub-category:`,
+        error
+      );
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `An error occurred while ${
+          formData.id ? "updating" : "adding"
+        } sub-category`,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditClick = (category: SubCategory) => {
+    setFormData({
+      id: category.id.toString(),
+      mainCategoryId: category.mainCategoryId.toString(),
+      name: category.name,
+      description: category.description || "",
+      image: null,
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (categoryId: number) => {
+    setCategoryToDelete(categoryId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BASE_UR
+        }admin/delete-sub-category/${categoryToDelete}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Sub-category deleted successfully",
+        });
+        setSubCategories(
+          subCategories.filter((cat) => cat.id !== categoryToDelete)
+        );
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: data.message || "Failed to delete sub-category",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting sub-category:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred while deleting sub-category",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      setCategoryToDelete(null);
+    }
+  };
 
   const filteredCategories = subCategories.filter((category) => {
     const matchesSearch =
@@ -146,30 +381,76 @@ export function SubCategoryManagement() {
               <DialogHeader>
                 <DialogTitle>Add New Sub-Category</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="categoryName">Sub-Category Name</Label>
+                  <Label htmlFor="mainCategoryId">Main Category</Label>
+                  <Select
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        mainCategoryId: value,
+                      }))
+                    }
+                    value={formData.mainCategoryId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a main category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {mainCategories.map((category) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="name">Sub-Category Name</Label>
                   <Input
-                    id="categoryName"
+                    id="name"
+                    name="name"
                     placeholder="Enter sub-category name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>
-                  <Input id="description" placeholder="Enter description" />
+                  <Input
+                    id="description"
+                    name="description"
+                    placeholder="Enter description"
+                    value={formData.description}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="image">Image</Label>
+                  <Input
+                    id="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
                     onClick={() => setIsAddDialogOpen(false)}
+                    disabled={isSubmitting}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Sub-Category
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Adding..." : "Add Sub-Category"}
                   </Button>
                 </div>
-              </div>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
@@ -212,15 +493,20 @@ export function SubCategoryManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        {/* <DropdownMenuItem>
                           <Eye className="mr-2 h-4 w-4" />
                           View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        </DropdownMenuItem> */}
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(category)}
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDeleteClick(category.id)}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -233,6 +519,109 @@ export function SubCategoryManagement() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Sub-Category</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="hidden" name="id" value={formData.id} />
+            <div>
+              <Label htmlFor="editMainCategoryId">Main Category</Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    mainCategoryId: value,
+                  }))
+                }
+                value={formData.mainCategoryId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a main category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mainCategories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editName">Sub-Category Name</Label>
+              <Input
+                id="editName"
+                name="name"
+                placeholder="Enter sub-category name"
+                value={formData.name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDescription">Description</Label>
+              <Input
+                id="editDescription"
+                name="description"
+                placeholder="Enter description"
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="editImage">Image</Label>
+              <Input
+                id="editImage"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Updating..." : "Update Sub-Category"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              sub-category.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
