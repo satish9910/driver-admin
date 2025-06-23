@@ -1,4 +1,3 @@
-
 import { StatsCard } from "./StatsCard";
 import { RecentOrders } from "./RecentOrders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -74,7 +73,7 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ml-64 mt-14">
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
@@ -133,8 +132,12 @@ export function Dashboard() {
           <div className="h-64 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <p className="text-gray-600">Sales chart would be rendered here</p>
-              <p className="text-sm text-gray-500">Integration with charting library needed</p>
+              <p className="text-gray-600">
+                Sales chart would be rendered here
+              </p>
+              <p className="text-sm text-gray-500">
+                Integration with charting library needed
+              </p>
             </div>
           </div>
         </CardContent>
