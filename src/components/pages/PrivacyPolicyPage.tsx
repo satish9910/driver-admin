@@ -35,6 +35,11 @@ const PrivacyPolicy = () => {
           });
           setIsEditing(true);
         }
+        toast.success(
+          response.data
+            ? "Privacy Policy fetched successfully!"
+            : "No existing Privacy Policy found."
+        );
       } catch (error) {
         console.error("Error fetching privacy policy:", error);
       }
@@ -75,11 +80,11 @@ const PrivacyPolicy = () => {
 
     try {
       const url = isEditing
-        ? `${import.meta.env.VITE_BASE_UR}admin/update-privacy-policy`
+        ? `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`
         : `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`;
 
       const response = await axios({
-        method: isEditing ? "put" : "post",
+        method: isEditing ? "post" : "post",
         url: url,
         data: data,
         headers: {

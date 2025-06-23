@@ -77,7 +77,7 @@ const TermsOfServicePage = () => {
 
     try {
       const url = isEditing
-        ? `${import.meta.env.VITE_BASE_UR}admin/update-terms-and-conditions`
+        ? `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`
         : `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`;
 
       const response = await axios({

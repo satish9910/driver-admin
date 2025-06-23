@@ -39,6 +39,11 @@ const AboutUsPage = () => {
           setExistingImage(response.data.data.imageUrl || "");
           setEditMode(true);
         }
+        toast.success(
+          editMode
+            ? "About Us updated successfully!"
+            : "About Us created successfully!"
+        );
       } catch (error) {
         console.error("Error fetching about us data:", error);
       } finally {
