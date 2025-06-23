@@ -19,7 +19,7 @@ const PrivacyPolicy = () => {
     const fetchPrivacyPolicy = async () => {
       try {
         const response = await axios.get(
-          "http://103.189.173.127:3000/api/admin/get-privacy-policy",
+          `${import.meta.env.VITE_BASE_UR}admin/get-privacy-policy`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -75,8 +75,8 @@ const PrivacyPolicy = () => {
 
     try {
       const url = isEditing
-        ? "http://103.189.173.127:3000/api/admin/update-privacy-policy"
-        : "http://103.189.173.127:3000/api/admin/add-privacy-policy";
+        ? `${import.meta.env.VITE_BASE_UR}admin/update-privacy-policy`
+        : `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`;
 
       const response = await axios({
         method: isEditing ? "put" : "post",

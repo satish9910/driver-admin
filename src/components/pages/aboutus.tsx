@@ -21,7 +21,7 @@ const AboutUsPage = () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
-          "http://103.189.173.127:3000/api/admin/get-about-us",
+          `${import.meta.env.VITE_BASE_UR}admin/get-about-us`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -83,7 +83,7 @@ const AboutUsPage = () => {
 
     try {
       const response = await axios.post(
-        "http://103.189.173.127:3000/api/admin/add-about-us",
+        `${import.meta.env.VITE_BASE_UR}admin/add-about-us`,
         formData,
         {
           headers: {

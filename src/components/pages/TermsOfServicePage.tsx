@@ -21,7 +21,7 @@ const TermsOfServicePage = () => {
     const fetchTerms = async () => {
       try {
         const response = await axios.get(
-          "http://103.189.173.127:3000/api/admin/get-terms-and-conditions",
+          `${import.meta.env.VITE_BASE_UR}admin/get-terms-and-conditions`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -77,8 +77,8 @@ const TermsOfServicePage = () => {
 
     try {
       const url = isEditing
-        ? "http://103.189.173.127:3000/api/admin/add-terms-and-conditions"
-        : "http://103.189.173.127:3000/api/admin/add-terms-and-conditions";
+        ? `${import.meta.env.VITE_BASE_UR}admin/update-terms-and-conditions`
+        : `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`;
 
       const response = await axios({
         method: isEditing ? "post" : "post",
