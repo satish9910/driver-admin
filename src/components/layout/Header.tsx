@@ -29,7 +29,7 @@ export function Header({ title, subtitle }: HeaderProps) {
   }, []);
 
   return (
-    <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between">
+    <div className="h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between fixed top-0 z-50">
       <div>
         <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
         {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}

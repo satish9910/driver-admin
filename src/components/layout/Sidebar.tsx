@@ -57,9 +57,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg">
-                
-              </div>
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg"></div>
               <span className="font-semibold text-gray-900">Shopinger</span>
             </div>
           )}

@@ -474,7 +474,7 @@ const AddProductManagement = () => {
                       </div>
                       <div>
                         <label
-                          htmlFor={`price-${variantIndex}`}
+                          htmlFor={`sellingprice-${variantIndex}`}
                           className="block text-sm font-medium text-gray-700 mt-2"
                         >
                           Selling Price <span className="text-red-500">*</span>
@@ -485,8 +485,8 @@ const AddProductManagement = () => {
                           </div>
                           <input
                             type="number"
-                            id={`price-${variantIndex}`}
-                            name="price"
+                            id={`sellingprice-${variantIndex}`}
+                            name="sellingprice"
                             value={variant.price}
                             onChange={(e) =>
                               handleVariantChange(variantIndex, e)
