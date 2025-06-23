@@ -36,6 +36,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/use-toast";
+import Cookies from "js-cookie";
 
 interface Product {
   id: number;
@@ -74,34 +76,76 @@ export function ProductManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 10;
 
+  const token = Cookies.get("admin_token");
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BASE_UR}admin/get-all-products`,
-          {
-            headers: {
-              Authorization:
-                "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc1MDQwMDc2MSwiZXhwIjoxNzUxMDA1NTYxfQ.2fO4KuPYckmnxjWB8yv3aCWuF0bORCEcO6rBDqZUoHs",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch products");
-        }
-
-        const data = await response.json();
-        setProducts(data.data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-products`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+
+      const data = await response.json();
+      setProducts(data.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: number) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/delete-product/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Bearer ${token}`,
+          },
+          body: new URLSearchParams({
+            houseNo: "222",
+            street: "straeet 2",
+            city: "New Delhi",
+            district: "New Delhi",
+            pincode: "110075",
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete product");
+      }
+
+      // Refresh the product list after successful deletion
+      await fetchProducts();
+
+      toast({
+        title: "Success",
+        description: "Product deleted successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (stock: number) => {
     if (stock > 0) {
@@ -340,7 +384,10 @@ export function ProductManagement() {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDeleteProduct(product.id)}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>

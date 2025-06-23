@@ -66,7 +66,7 @@ const getStatusColor = (status) => {
   }
 };
 
-export function VendorManagement() {
+export function PendingVendors() {
   const [vendors, setVendors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -87,7 +87,7 @@ export function VendorManagement() {
     const fetchVendors = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-pending-vendors`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -272,7 +272,6 @@ export function VendorManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>#</TableHead>
                 <TableHead>Vendor Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -284,7 +283,6 @@ export function VendorManagement() {
             <TableBody>
               {filteredVendors.map((vendor) => (
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
-                  <TableCell>{filteredVendors.indexOf(vendor) + 1}</TableCell>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
                   <TableCell>{vendor.role}</TableCell>

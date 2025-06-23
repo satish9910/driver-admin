@@ -89,6 +89,16 @@ const AddProductManagement = () => {
     }));
   };
 
+  const addAttributes = () => {
+    setProduct((prev) => ({
+      ...prev,
+      variants: [
+        ...prev.variants,
+        { sku: "", price: "", stock: "", color: "", size: "" },
+      ],
+    }));
+  };
+
   const removeVariant = (index) => {
     if (product.variants.length <= 1) return;
     const updatedVariants = product.variants.filter((_, i) => i !== index);
@@ -380,7 +390,7 @@ const AddProductManagement = () => {
                           <div className="mt-1 relative rounded-md shadow-sm">
                             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                               <span className="text-gray-500 sm:text-sm">
-                                $
+                                ₹
                               </span>
                             </div>
                             <input
@@ -416,18 +426,44 @@ const AddProductManagement = () => {
                           />
                         </div>
                       </div>
+                      <div>
+                        <label
+                          htmlFor={`stock-${index}`}
+                          className="block text-sm font-medium text-gray-700"
+                        >
+                          Price <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          id={`stock-${index}`}
+                          name="stock"
+                          value={variant.stock}
+                          onChange={(e) => handleVariantChange(index, e)}
+                          required
+                          className="mt-1 w-[300px] block border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                          min="0"
+                          placeholder="0.00"
+                        />
+                      </div>
                       <div className="mt-6">
-                        <h3 className="text-lg font-medium text-gray-900">
-                          Product Attributes
-                        </h3>
+                        <div className="flex justify-between items-center mb-4">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            Attributes
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={addAttributes}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-700 hover:bg-gold-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
+                          >
+                            Add Attributes
+                          </button>
+                        </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
                           <div>
                             <label
                               htmlFor={`color-${index}`}
                               className="block text-sm font-medium text-gray-700"
-                            >
-                              Color
-                            </label>
+                            ></label>
                             <input
                               type="text"
                               id={`color-${index}`}
@@ -435,15 +471,14 @@ const AddProductManagement = () => {
                               value={variant.color || ""}
                               onChange={(e) => handleVariantChange(index, e)}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                              placeholder="color "
                             />
                           </div>
                           <div>
                             <label
                               htmlFor={`size-${index}`}
                               className="block text-sm font-medium text-gray-700"
-                            >
-                              Size
-                            </label>
+                            ></label>
                             <input
                               type="text"
                               id={`size-${index}`}
@@ -451,6 +486,39 @@ const AddProductManagement = () => {
                               value={variant.size || ""}
                               onChange={(e) => handleVariantChange(index, e)}
                               className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                              placeholder="size "
+                            />
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
+                          <div>
+                            <label
+                              htmlFor={`color-${index}`}
+                              className="block text-sm font-medium text-gray-700"
+                            ></label>
+                            <input
+                              type="text"
+                              id={`color-${index}`}
+                              name="color"
+                              value={variant.color || ""}
+                              onChange={(e) => handleVariantChange(index, e)}
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                              placeholder="size "
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor={`size-${index}`}
+                              className="block text-sm font-medium text-gray-700"
+                            ></label>
+                            <input
+                              type="text"
+                              id={`size-${index}`}
+                              name="size"
+                              value={variant.size || ""}
+                              onChange={(e) => handleVariantChange(index, e)}
+                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                              placeholder="size "
                             />
                           </div>
                         </div>

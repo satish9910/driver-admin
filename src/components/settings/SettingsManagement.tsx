@@ -1,22 +1,61 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/use-toast";
+import axios from "axios";
+import Cookies from "js-cookie";
 
 export function SettingsManagement() {
-  const [siteName, setSiteName] = useState("AdminHub");
-  const [siteEmail, setSiteEmail] = useState("admin@adminhub.com");
-  const [currency, setCurrency] = useState("USD");
-  const [timezone, setTimezone] = useState("UTC");
+  const { toast } = useToast();
+  const [settings, setSettings] = useState({
+    vendorCommission: 15,
+    plateformfee: 5,
+    gst: 5,
+    deliveryFee: 40,
+  });
+  const [loading, setLoading] = useState(false);
+
+  const token = Cookies.get("admin_token");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setSettings((prev) => ({
+      ...prev,
+      [id]: parseFloat(value) || 0,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_UR}admin/set-settings`,
+        settings,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      toast({
+        title: "Success",
+        description: "Settings saved successfully",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -37,40 +76,47 @@ export function SettingsManagement() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="siteName">Site Name</Label>
+                  <Label htmlFor="vendorCommission">
+                    Vendor Commission (%)
+                  </Label>
                   <Input
-                    id="siteName"
-                    value={siteName}
-                    onChange={(e) => setSiteName(e.target.value)}
+                    id="vendorCommission"
+                    type="number"
+                    value={settings.vendorCommission}
+                    onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="siteEmail">Contact Email</Label>
+                  <Label htmlFor="plateformfee">Platform Fee (%)</Label>
                   <Input
-                    id="siteEmail"
-                    type="email"
-                    value={siteEmail}
-                    onChange={(e) => setSiteEmail(e.target.value)}
+                    id="plateformfee"
+                    type="number"
+                    value={settings.plateformfee}
+                    onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="currency">Default Currency</Label>
+                  <Label htmlFor="gst">GST (%)</Label>
                   <Input
-                    id="currency"
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    id="gst"
+                    type="number"
+                    value={settings.gst}
+                    onChange={handleChange}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="timezone">Timezone</Label>
+                  <Label htmlFor="deliveryFee">Delivery Fee (₹)</Label>
                   <Input
-                    id="timezone"
-                    value={timezone}
-                    onChange={(e) => setTimezone(e.target.value)}
+                    id="deliveryFee"
+                    type="number"
+                    value={settings.deliveryFee}
+                    onChange={handleChange}
                   />
                 </div>
               </div>
-              <Button>Save General Settings</Button>
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? "Saving..." : "Save General Settings"}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -84,14 +130,18 @@ export function SettingsManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Stripe</Label>
-                  <p className="text-sm text-gray-500">Accept credit card payments</p>
+                  <p className="text-sm text-gray-500">
+                    Accept credit card payments
+                  </p>
                 </div>
                 <Switch defaultChecked />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Razorpay</Label>
-                  <p className="text-sm text-gray-500">Accept payments in India</p>
+                  <p className="text-sm text-gray-500">
+                    Accept payments in India
+                  </p>
                 </div>
                 <Switch />
               </div>
@@ -118,10 +168,6 @@ export function SettingsManagement() {
                 <Input id="minOrder" type="number" placeholder="0" />
               </div>
               <div>
-                <Label htmlFor="deliveryFee">Standard Delivery Fee</Label>
-                <Input id="deliveryFee" type="number" placeholder="5.00" />
-              </div>
-              <div>
                 <Label htmlFor="freeDelivery">Free Delivery Above</Label>
                 <Input id="freeDelivery" type="number" placeholder="50.00" />
               </div>
@@ -139,21 +185,27 @@ export function SettingsManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Order Confirmation Email</Label>
-                  <p className="text-sm text-gray-500">Send email when order is placed</p>
+                  <p className="text-sm text-gray-500">
+                    Send email when order is placed
+                  </p>
                 </div>
                 <Switch defaultChecked />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Shipping Updates SMS</Label>
-                  <p className="text-sm text-gray-500">Send SMS for shipping updates</p>
+                  <p className="text-sm text-gray-500">
+                    Send SMS for shipping updates
+                  </p>
                 </div>
                 <Switch />
               </div>
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Marketing Emails</Label>
-                  <p className="text-sm text-gray-500">Send promotional emails</p>
+                  <p className="text-sm text-gray-500">
+                    Send promotional emails
+                  </p>
                 </div>
                 <Switch defaultChecked />
               </div>
