@@ -30,6 +30,7 @@ import UserProfile from "./components/pages/userprofile";
 import VendorProfile from "./components/pages/vendorprofile";
 import ProductdetailsPage from "./components/pages/productdetailspage";
 import OrderDetails from "./components/pages/orderdetails";
+import { PendingVendors } from "./components/vendors/pendingvendors";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,10 @@ const sectionTitles = {
   vendors: {
     title: "Vendor Management",
     subtitle: "Oversee vendor applications and stores",
+  },
+  PendingVendors: {
+    title: "Pending Vendors",
+    subtitle: "Manage pending vendor applications",
   },
   products: {
     title: "Product Management",
@@ -123,6 +128,11 @@ const sectionRoutes = [
     path: "/orderdetails/:orderId",
     key: "orderdetails",
     element: <OrderDetails />,
+  },
+  {
+    path: "/pendingvendors",
+    key: "pendingvendors",
+    element: <PendingVendors />,
   },
 ];
 

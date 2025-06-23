@@ -100,7 +100,7 @@ const ProductdetailsPage = () => {
             <div className="lg:w-1/2 mb-10 lg:mb-0">
               <div className="bg-gray-50 p-8 flex items-center justify-center h-96 mb-4">
                 <img
-                  src={`${import.meta.env.VITE_BASE_UR_IMG}${
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${
                     variant.images[selectedImage]
                   }`}
                   alt={product.name}
@@ -117,7 +117,7 @@ const ProductdetailsPage = () => {
                     }`}
                   >
                     <img
-                      src={`${import.meta.env.VITE_BASE_UR_IMG}${image}`}
+                      src={`${import.meta.env.VITE_BASE_URL_IMG}${image}`}
                       alt={`${product.name} thumbnail ${index}`}
                       className="max-h-full max-w-full object-contain"
                     />

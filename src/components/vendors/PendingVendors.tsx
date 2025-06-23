@@ -66,7 +66,7 @@ const getStatusColor = (status) => {
   }
 };
 
-export function VendorManagement() {
+export function PendingVendors() {
   const [vendors, setVendors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
@@ -87,7 +87,7 @@ export function VendorManagement() {
     const fetchVendors = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-pending-vendors`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
