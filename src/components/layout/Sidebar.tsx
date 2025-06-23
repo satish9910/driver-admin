@@ -111,7 +111,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200">
+      {/* <div className="p-4 border-t border-gray-200">
         {!isCollapsed ? (
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
@@ -130,7 +130,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             <LogOut className="h-4 w-4" />
           </Button>
         )}
-      </div>
+      </div> */}
     </div>
   );
 }

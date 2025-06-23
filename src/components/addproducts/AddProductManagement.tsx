@@ -158,7 +158,7 @@ const AddProductManagement = () => {
       formData.append("variants", JSON.stringify(product.variants));
 
       images.forEach((image, index) => {
-        formData.append(`images_${index}`, image);
+        formData.append(`images_0`, image);
       });
 
       const token = Cookies.get("admin_token");
@@ -651,9 +651,7 @@ const AddProductManagement = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            setImages((prev) =>
-                              prev.filter((_, i) => i !== index)
-                            )
+                            setImages((prev) => prev.filter((_, i) => 0 !== 0))
                           }
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                         >
