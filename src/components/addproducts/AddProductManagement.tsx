@@ -9,7 +9,17 @@ const AddProductManagement = () => {
     mainCategoryId: "",
     subCategoryId: "",
     vendorId: "",
-    variants: [{ sku: "", price: "", stock: "", color: "", size: "" }],
+    variants: [
+      {
+        sku: "",
+        price: "",
+        stock: "",
+        attributes: [
+          { name: "color", value: "" },
+          { name: "size", value: "" },
+        ],
+      },
+    ],
   });
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -20,11 +30,11 @@ const AddProductManagement = () => {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const fileInputRef = useRef(null);
 
+  const token = Cookies.get("admin_token");
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = Cookies.get("admin_token");
-
         // Fetch main categories
         const mainCategoriesResponse = await axios.get(
           `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
@@ -72,10 +82,17 @@ const AddProductManagement = () => {
     setProduct((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleVariantChange = (index, e) => {
+  const handleVariantChange = (variantIndex, e) => {
     const { name, value } = e.target;
     const updatedVariants = [...product.variants];
-    updatedVariants[index][name] = value;
+    updatedVariants[variantIndex][name] = value;
+    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+  };
+
+  const handleAttributeChange = (variantIndex, attrIndex, e) => {
+    const { name, value } = e.target;
+    const updatedVariants = [...product.variants];
+    updatedVariants[variantIndex].attributes[attrIndex][name] = value;
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -84,24 +101,37 @@ const AddProductManagement = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { sku: "", price: "", stock: "", color: "", size: "" },
+        {
+          sku: "",
+          price: "",
+          stock: "",
+          attributes: [
+            { name: "color", value: "" },
+            { name: "size", value: "" },
+          ],
+        },
       ],
     }));
   };
 
-  const addAttributes = () => {
-    setProduct((prev) => ({
-      ...prev,
-      variants: [
-        ...prev.variants,
-        { sku: "", price: "", stock: "", color: "", size: "" },
-      ],
-    }));
+  const addAttribute = (variantIndex) => {
+    const updatedVariants = [...product.variants];
+    updatedVariants[variantIndex].attributes.push({ name: "", value: "" });
+    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
   const removeVariant = (index) => {
     if (product.variants.length <= 1) return;
     const updatedVariants = product.variants.filter((_, i) => i !== index);
+    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+  };
+
+  const removeAttribute = (variantIndex, attrIndex) => {
+    const updatedVariants = [...product.variants];
+    if (updatedVariants[variantIndex].attributes.length <= 1) return;
+    updatedVariants[variantIndex].attributes = updatedVariants[
+      variantIndex
+    ].attributes.filter((_, i) => i !== attrIndex);
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -151,7 +181,17 @@ const AddProductManagement = () => {
         mainCategoryId: "",
         subCategoryId: "",
         vendorId: "",
-        variants: [{ sku: "", price: "", stock: "", color: "", size: "" }],
+        variants: [
+          {
+            sku: "",
+            price: "",
+            stock: "",
+            attributes: [
+              { name: "color", value: "" },
+              { name: "size", value: "" },
+            ],
+          },
+        ],
       });
       setImages([]);
     } catch (error) {
@@ -336,15 +376,15 @@ const AddProductManagement = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {product.variants.map((variant, index) => (
+                  {product.variants.map((variant, variantIndex) => (
                     <div
-                      key={index}
+                      key={variantIndex}
                       className="bg-gray-50 p-4 rounded-lg relative border border-gray-200"
                     >
                       {product.variants.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => removeVariant(index)}
+                          onClick={() => removeVariant(variantIndex)}
                           className="absolute top-2 right-2 text-gray-400 hover:text-red-500"
                         >
                           <svg
@@ -365,24 +405,26 @@ const AddProductManagement = () => {
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>
                           <label
-                            htmlFor={`sku-${index}`}
+                            htmlFor={`sku-${variantIndex}`}
                             className="block text-sm font-medium text-gray-700"
                           >
                             SKU <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="text"
-                            id={`sku-${index}`}
+                            id={`sku-${variantIndex}`}
                             name="sku"
                             value={variant.sku}
-                            onChange={(e) => handleVariantChange(index, e)}
+                            onChange={(e) =>
+                              handleVariantChange(variantIndex, e)
+                            }
                             required
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                           />
                         </div>
                         <div>
                           <label
-                            htmlFor={`price-${index}`}
+                            htmlFor={`price-${variantIndex}`}
                             className="block text-sm font-medium text-gray-700"
                           >
                             Price <span className="text-red-500">*</span>
@@ -395,12 +437,14 @@ const AddProductManagement = () => {
                             </div>
                             <input
                               type="number"
-                              id={`price-${index}`}
+                              id={`price-${variantIndex}`}
                               name="price"
                               value={variant.price}
-                              onChange={(e) => handleVariantChange(index, e)}
+                              onChange={(e) =>
+                                handleVariantChange(variantIndex, e)
+                              }
                               required
-                              className="focus:ring-gold-500 focus:border-gold-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 px-3"
+                              className="border border-gray-300 block w-full pl-7 pr-5 sm:text-sm rounded-md py-2 px-3"
                               placeholder="0.00"
                               min="0"
                               step="0.01"
@@ -409,17 +453,19 @@ const AddProductManagement = () => {
                         </div>
                         <div>
                           <label
-                            htmlFor={`stock-${index}`}
+                            htmlFor={`stock-${variantIndex}`}
                             className="block text-sm font-medium text-gray-700"
                           >
                             Stock <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="number"
-                            id={`stock-${index}`}
+                            id={`stock-${variantIndex}`}
                             name="stock"
                             value={variant.stock}
-                            onChange={(e) => handleVariantChange(index, e)}
+                            onChange={(e) =>
+                              handleVariantChange(variantIndex, e)
+                            }
                             required
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                             min="0"
@@ -428,23 +474,32 @@ const AddProductManagement = () => {
                       </div>
                       <div>
                         <label
-                          htmlFor={`stock-${index}`}
-                          className="block text-sm font-medium text-gray-700"
+                          htmlFor={`price-${variantIndex}`}
+                          className="block text-sm font-medium text-gray-700 mt-2"
                         >
-                          Price <span className="text-red-500">*</span>
+                          Selling Price <span className="text-red-500">*</span>
                         </label>
-                        <input
-                          type="number"
-                          id={`stock-${index}`}
-                          name="stock"
-                          value={variant.stock}
-                          onChange={(e) => handleVariantChange(index, e)}
-                          required
-                          className="mt-1 w-[300px] block border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                          min="0"
-                          placeholder="0.00"
-                        />
+                        <div className="mt-1 relative rounded-md shadow-sm">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span className="text-gray-500 sm:text-sm">₹</span>
+                          </div>
+                          <input
+                            type="number"
+                            id={`price-${variantIndex}`}
+                            name="price"
+                            value={variant.price}
+                            onChange={(e) =>
+                              handleVariantChange(variantIndex, e)
+                            }
+                            required
+                            className="border border-gray-300 block w-[300px] pl-7 pr-4 sm:text-sm rounded-md py-2 px-3"
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
                       </div>
+
                       <div className="mt-6">
                         <div className="flex justify-between items-center mb-4">
                           <h3 className="text-lg font-medium text-gray-900">
@@ -452,75 +507,89 @@ const AddProductManagement = () => {
                           </h3>
                           <button
                             type="button"
-                            onClick={addAttributes}
+                            onClick={() => addAttribute(variantIndex)}
                             className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-full shadow-sm text-white bg-blue-700 hover:bg-gold-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
                           >
-                            Add Attributes
+                            Add Attribute
                           </button>
                         </div>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
-                          <div>
-                            <label
-                              htmlFor={`color-${index}`}
-                              className="block text-sm font-medium text-gray-700"
-                            ></label>
-                            <input
-                              type="text"
-                              id={`color-${index}`}
-                              name="color"
-                              value={variant.color || ""}
-                              onChange={(e) => handleVariantChange(index, e)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                              placeholder="color "
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor={`size-${index}`}
-                              className="block text-sm font-medium text-gray-700"
-                            ></label>
-                            <input
-                              type="text"
-                              id={`size-${index}`}
-                              name="size"
-                              value={variant.size || ""}
-                              onChange={(e) => handleVariantChange(index, e)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                              placeholder="size "
-                            />
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4">
-                          <div>
-                            <label
-                              htmlFor={`color-${index}`}
-                              className="block text-sm font-medium text-gray-700"
-                            ></label>
-                            <input
-                              type="text"
-                              id={`color-${index}`}
-                              name="color"
-                              value={variant.color || ""}
-                              onChange={(e) => handleVariantChange(index, e)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                              placeholder="size "
-                            />
-                          </div>
-                          <div>
-                            <label
-                              htmlFor={`size-${index}`}
-                              className="block text-sm font-medium text-gray-700"
-                            ></label>
-                            <input
-                              type="text"
-                              id={`size-${index}`}
-                              name="size"
-                              value={variant.size || ""}
-                              onChange={(e) => handleVariantChange(index, e)}
-                              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                              placeholder="size "
-                            />
-                          </div>
+                        <div className="space-y-4">
+                          {variant.attributes.map((attribute, attrIndex) => (
+                            <div
+                              key={attrIndex}
+                              className="grid grid-cols-1 gap-4 sm:grid-cols-2 relative"
+                            >
+                              {variant.attributes.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    removeAttribute(variantIndex, attrIndex)
+                                  }
+                                  className="absolute top-0 right-0 text-gray-400 hover:text-red-500"
+                                >
+                                  <svg
+                                    className="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
+                                  </svg>
+                                </button>
+                              )}
+                              <div>
+                                <label
+                                  htmlFor={`attr-name-${variantIndex}-${attrIndex}`}
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Attribute Name
+                                </label>
+                                <input
+                                  type="text"
+                                  id={`attr-name-${variantIndex}-${attrIndex}`}
+                                  name="name"
+                                  value={attribute.name}
+                                  onChange={(e) =>
+                                    handleAttributeChange(
+                                      variantIndex,
+                                      attrIndex,
+                                      e
+                                    )
+                                  }
+                                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                                  placeholder="e.g. color, size"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor={`attr-value-${variantIndex}-${attrIndex}`}
+                                  className="block text-sm font-medium text-gray-700"
+                                >
+                                  Attribute Value
+                                </label>
+                                <input
+                                  type="text"
+                                  id={`attr-value-${variantIndex}-${attrIndex}`}
+                                  name="value"
+                                  value={attribute.value}
+                                  onChange={(e) =>
+                                    handleAttributeChange(
+                                      variantIndex,
+                                      attrIndex,
+                                      e
+                                    )
+                                  }
+                                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                                  placeholder="e.g. red, large"
+                                />
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
