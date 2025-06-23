@@ -493,8 +493,8 @@ export function BannerManagement() {
                   </p>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>Category: {banner.catId}</span>
-                  <span>Subcategory: {banner.subCatId}</span>
+                  {/* <span>Category: {banner.catId}</span>
+                  <span>Subcategory: {banner.subCatId}</span> */}
                 </div>
                 <div className="text-xs text-gray-500">
                   Created: {new Date(banner.createdAt).toLocaleDateString()}

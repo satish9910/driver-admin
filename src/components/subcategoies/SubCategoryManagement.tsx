@@ -465,10 +465,12 @@ export function SubCategoryManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Main Category ID</TableHead>
+                {/* <TableHead>Main Category ID</TableHead> */}
                 <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
+                <TableHead>Image</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -476,14 +478,26 @@ export function SubCategoryManagement() {
             <TableBody>
               {filteredCategories.map((category) => (
                 <TableRow key={category.id} className="hover:bg-gray-50">
+                  <TableCell>{filteredCategories.indexOf(category) + 1}</TableCell>
                   <TableCell>
                     <div className="font-medium">{category.name}</div>
                   </TableCell>
-                  <TableCell>{category.mainCategoryId}</TableCell>
+                  {/* <TableCell>{category.mainCategoryId}</TableCell> */}
                   <TableCell className="max-w-xs truncate">
-                    {category.description}
+                    {category.description.slice(0, 20)}
                   </TableCell>
                   <TableCell>{category.slug}</TableCell>
+                  <TableCell>
+                    {category.imgUrl && (
+                      <img
+                        src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                          category.imgUrl
+                        }`}
+                        alt={category.name}
+                        className="h-10 w-10 object-cover rounded"
+                      />
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(category.createdAt)}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>

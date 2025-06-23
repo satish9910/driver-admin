@@ -100,6 +100,7 @@ export function VendorManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Vendor Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
@@ -111,6 +112,7 @@ export function VendorManagement() {
             <TableBody>
               {filteredVendors.map((vendor) => (
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
+                  <TableCell>{filteredVendors.indexOf(vendor) + 1}</TableCell>
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
                   <TableCell>{vendor.role}</TableCell>

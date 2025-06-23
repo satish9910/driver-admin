@@ -222,27 +222,25 @@ export function TransactionManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
+                <TableHead>#</TableHead>
                 <TableHead>Order ID</TableHead>
                 <TableHead>Payment ID</TableHead>
-                <TableHead>User ID</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Product ID</TableHead>
+                {/* <TableHead>Product ID</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">
-                    {transaction.id}
-                  </TableCell>
+                  <TableCell>{filteredTransactions.indexOf(transaction) + 1}</TableCell>
                   <TableCell>{transaction.order_id}</TableCell>
                   <TableCell>{transaction.payment_id}</TableCell>
-                  <TableCell>{transaction.userId}</TableCell>
-                  <TableCell className="text-green-600">
+                  <TableCell>{transaction.user?.name || "N/A"}</TableCell>
+                  <TableCell className="text-green-800 font-medium">
                     ₹{transaction.amount.toLocaleString()}
                   </TableCell>
                   <TableCell>
@@ -253,7 +251,7 @@ export function TransactionManagement() {
                   <TableCell>
                     {new Date(transaction.createdAt).toLocaleDateString()}
                   </TableCell>
-                  <TableCell>{transaction.product_id}</TableCell>
+                  {/* <TableCell>{transaction.product_id}</TableCell> */}
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon">
                       <Eye className="h-4 w-4" />

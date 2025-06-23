@@ -64,7 +64,7 @@ const LoginPage = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900">AdminHub</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Shopinger</h1>
           <p className="text-gray-600">Sign in to your admin account</p>
         </div>
 
@@ -149,7 +149,7 @@ const LoginPage = () => {
         </Card>
 
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>© 2024 AdminHub. All rights reserved.</p>
+          <p>© 2024 Shopinger. All rights reserved.</p>
         </div>
       </div>
     </div>

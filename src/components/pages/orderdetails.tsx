@@ -222,7 +222,7 @@ const OrderDetails = () => {
                 <div className="flex flex-col md:flex-row">
                   <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 mb-4 md:mb-0">
                     <img
-                      src={`http://${item.variant.images[0]}`}
+                      src={`${import.meta.env.VITE_BASE_URL_IMG}${item.variant.images[0]}`}
                       alt={item.variant.product.name}
                       className="w-full h-full object-cover object-center"
                     />

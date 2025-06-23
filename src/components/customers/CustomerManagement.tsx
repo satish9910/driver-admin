@@ -112,6 +112,7 @@ export function CustomerManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Name & Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Join Date</TableHead>
@@ -122,6 +123,7 @@ export function CustomerManagement() {
             <TableBody>
               {filteredUsers.map((user) => (
                 <TableRow key={user.id} className="hover:bg-gray-50">
+                  <TableCell>{filteredUsers.indexOf(user) + 1}</TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{user.name}</div>

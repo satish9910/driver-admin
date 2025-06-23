@@ -277,6 +277,7 @@ export function ProductManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Product</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Subcategory</TableHead>
@@ -290,6 +291,7 @@ export function ProductManagement() {
             <TableBody>
               {currentProducts.map((product) => (
                 <TableRow key={product.id} className="hover:bg-gray-50">
+                  <TableCell>{filteredProducts.indexOf(product) + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-3">
                       {product.variants[0]?.images?.length > 0 && (
@@ -308,7 +310,7 @@ export function ProductManagement() {
                   <TableCell>{product.subCategory.name}</TableCell>
                   <TableCell>{product.vendor.name}</TableCell>
                   <TableCell>{product.variants[0]?.stock || 0}</TableCell>
-                  <TableCell>${product.variants[0]?.price || "0.00"}</TableCell>
+                  <TableCell>₹{product.variants[0]?.price || "0.00"}</TableCell>
                   <TableCell>
                     <Badge
                       className={getStatusColor(

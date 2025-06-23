@@ -381,6 +381,7 @@ export function CategoryManagement() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>#</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
@@ -393,6 +394,7 @@ export function CategoryManagement() {
             <TableBody>
               {filteredCategories.map((category) => (
                 <TableRow key={category.id} className="hover:bg-gray-50">
+                  <TableCell>{filteredCategories.indexOf(category) + 1}</TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{category.name}</div>
@@ -401,7 +403,7 @@ export function CategoryManagement() {
                   <TableCell>
                     <div>
                       <div className="text-sm text-gray-500">
-                        {category.description}
+                        {category.description.toString().slice(0, 40)}
                       </div>
                     </div>
                   </TableCell>
