@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ const pages = [
     lastModified: "2024-01-15",
     author: "Admin",
     views: 1234,
+    path: "/aboutus",
   },
   {
     id: 2,
@@ -53,6 +55,7 @@ const pages = [
     lastModified: "2024-01-10",
     author: "Admin",
     views: 856,
+    path: "/privacypolicy",
   },
   {
     id: 3,
@@ -62,6 +65,7 @@ const pages = [
     lastModified: "2024-01-08",
     author: "Admin",
     views: 723,
+    path: "/termsofservice",
   },
   {
     id: 4,
@@ -71,6 +75,7 @@ const pages = [
     lastModified: "2024-01-05",
     author: "Admin",
     views: 0,
+    path: "/refund-policy",
   },
   {
     id: 5,
@@ -80,6 +85,7 @@ const pages = [
     lastModified: "2024-01-03",
     author: "Admin",
     views: 421,
+    path: "/shipping-info",
   },
 ];
 
@@ -87,8 +93,9 @@ export function StaticPagesManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case "published":
         return "bg-green-100 text-green-800";
@@ -109,6 +116,10 @@ export function StaticPagesManagement() {
       statusFilter === "all" || page.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const handlePreview = (path) => {
+    navigate(path);
+  };
 
   return (
     <div className="space-y-6 px-2 mx-auto ml-64 mt-14">
@@ -212,9 +223,25 @@ export function StaticPagesManagement() {
                 {filteredPages.map((page) => (
                   <TableRow key={page.id} className="hover:bg-gray-50">
                     <TableCell>{filteredPages.indexOf(page) + 1}</TableCell>
-                    <TableCell className="font-medium">{page.title}</TableCell>
+                    <TableCell className="font-medium">
+                      <a
+                        href={page.path}
+                        className="text-blue-600 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {page.title}
+                      </a>
+                    </TableCell>
                     <TableCell className="text-gray-500">
-                      /{page.slug}
+                      <a
+                        href={page.path}
+                        className="hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        /{page.slug}
+                      </a>
                     </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(page.status)}>
@@ -232,7 +259,9 @@ export function StaticPagesManagement() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handlePreview(page.path)}
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             Preview
                           </DropdownMenuItem>

@@ -30,7 +30,11 @@ import UserProfile from "./components/pages/userprofile";
 import VendorProfile from "./components/pages/vendorprofile";
 import ProductdetailsPage from "./components/pages/productdetailspage";
 import OrderDetails from "./components/pages/orderdetails";
-import { PendingVendors } from "./components/vendors/pendingvendors";
+import { PendingVendors } from "./components/vendors/PendingVendors";
+import AboutUsPage from "./components/pages/aboutus";
+// import ContactUsPage from "./components/pages/ContactUsPage";
+import PrivacyPolicyPage from "./components/pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./components/pages/TermsOfServicePage";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -133,6 +137,29 @@ const sectionRoutes = [
     path: "/pendingvendors",
     key: "pendingvendors",
     element: <PendingVendors />,
+  },
+
+  {
+    path: "/aboutus",
+    key: "aboutus",
+    element: <AboutUsPage />,
+  },
+  {
+    path: "/privacypolicy",
+    key: "privacypolicy",
+    element: <PrivacyPolicyPage />,
+  },
+
+  // {
+  //   path: "/contactus",
+  //   key: "contactus",
+  //   element: <ContactUsPage />,
+  // },
+
+  {
+    path: "/termsofservice",
+    key: "termsofservice",
+    element: <TermsOfServicePage />,
   },
 ];
 
