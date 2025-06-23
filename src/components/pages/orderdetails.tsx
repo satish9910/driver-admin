@@ -8,6 +8,10 @@ const OrderDetails = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [updateError, setUpdateError] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedItemId, setSelectedItemId] = useState(null);
   const token = Cookies.get("admin_token");
 
   useEffect(() => {
@@ -31,6 +35,53 @@ const OrderDetails = () => {
 
     fetchOrderDetails();
   }, [orderId, token]);
+
+  const updateOrderItemStatus = async () => {
+    if (!selectedStatus || !selectedItemId) return;
+
+    setUpdatingStatus(true);
+    setUpdateError(null);
+
+    try {
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_UR}admin/update-order-status-admin`,
+        new URLSearchParams({
+          OrderItemStatus: selectedStatus,
+          OrderItemId: selectedItemId.toString(),
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      // Update the local state to reflect the change
+      setOrder((prevOrder) => ({
+        ...prevOrder,
+        orderItems: prevOrder.orderItems.map((item) =>
+          item.id === selectedItemId
+            ? { ...item, orderItemStatus: selectedStatus }
+            : item
+        ),
+      }));
+
+      setSelectedStatus("");
+      setSelectedItemId(null);
+    } catch (err) {
+      setUpdateError(err.response?.data?.message || err.message);
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
+
+  const handleStatusChange = (itemId, currentStatus) => {
+    setSelectedItemId(itemId);
+    setSelectedStatus(currentStatus);
+  };
+
+  const statusOptions = ["ORDERED", "SHIPPED", "DELIVERED", "CANCELLED"];
 
   if (loading) {
     return (
@@ -71,17 +122,25 @@ const OrderDetails = () => {
     switch (status) {
       case "CONFIRMED":
         return "bg-blue-100 text-blue-800";
+      case "PROCESSING":
+        return "bg-yellow-100 text-yellow-800";
+      case "SHIPPED":
+        return "bg-indigo-100 text-indigo-800";
       case "DELIVERED":
         return "bg-green-100 text-green-800";
       case "SUCCESS":
         return "bg-purple-100 text-purple-800";
+      case "CANCELLED":
+        return "bg-red-100 text-red-800";
+      case "RETURNED":
+        return "bg-orange-100 text-orange-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6 ml-64 mt-14">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
@@ -104,10 +163,64 @@ const OrderDetails = () => {
           </div>
         </div>
 
+        {/* Update Status Modal */}
+        {selectedItemId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">
+                Update Order Item Status
+              </h3>
+
+              {updateError && (
+                <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+                  {updateError}
+                </div>
+              )}
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Status
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setSelectedItemId(null);
+                    setSelectedStatus("");
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+                  disabled={updatingStatus}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateOrderItemStatus}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  disabled={updatingStatus}
+                >
+                  {updatingStatus ? "Updating..." : "Update Status"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Order Summary Card */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100">
           <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-            <h2 className="text-xl font-semibold">Order :{order.id}</h2>
+            <h2 className="text-xl font-semibold">Order : {order.id}</h2>
             <p className="text-gray-300">
               Placed on {formatDate(order.createdAt)}
             </p>
@@ -260,7 +373,7 @@ const OrderDetails = () => {
                       </div>
                     </div>
 
-                    <div className="mt-4 flex items-center">
+                    <div className="mt-4 flex items-center justify-between">
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(
                           item.orderItemStatus
@@ -268,6 +381,14 @@ const OrderDetails = () => {
                       >
                         {item.orderItemStatus}
                       </span>
+                      <button
+                        onClick={() =>
+                          handleStatusChange(item.id, item.orderItemStatus)
+                        }
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                      >
+                        Update Status
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -285,7 +406,6 @@ const OrderDetails = () => {
           </div>
           <div className="p-6">
             <div className="relative">
-              {/* Timeline items would go here */}
               <div className="mb-6 ml-6">
                 <div className="absolute w-4 h-4 bg-blue-500 rounded-full mt-1.5 -left-2 border-4 border-white"></div>
                 <div className="flex flex-col sm:flex-row sm:justify-between">
@@ -335,7 +455,11 @@ const OrderDetails = () => {
                       </p>
                     </div>
                     <time className="text-sm text-gray-500 sm:mt-0 mt-1">
-                      May 15, 2025
+                      {formatDate(
+                        order.orderItems.find(
+                          (item) => item.orderItemStatus === "DELIVERED"
+                        )?.updatedAt || new Date()
+                      )}
                     </time>
                   </div>
                 </div>

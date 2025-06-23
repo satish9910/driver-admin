@@ -269,10 +269,10 @@ export function ProductManagement() {
           <Button variant="outline">Export</Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              {/* <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Product
-              </Button>
+              </Button> */}
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -302,9 +302,9 @@ export function ProductManagement() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={() => setIsAddDialogOpen(false)}>
+                  {/* <Button onClick={() => setIsAddDialogOpen(false)}>
                     Add Product
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </DialogContent>
