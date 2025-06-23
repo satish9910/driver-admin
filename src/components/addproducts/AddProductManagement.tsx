@@ -487,7 +487,7 @@ const AddProductManagement = () => {
                             type="number"
                             id={`sellingprice-${variantIndex}`}
                             name="sellingprice"
-                            value={variant.price}
+                            value={variant.sellingprice}
                             onChange={(e) =>
                               handleVariantChange(variantIndex, e)
                             }
