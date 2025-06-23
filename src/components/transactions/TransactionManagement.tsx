@@ -131,7 +131,7 @@ export function TransactionManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ml-64 mt-14">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
@@ -236,7 +236,9 @@ export function TransactionManagement() {
             <TableBody>
               {filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="hover:bg-gray-50">
-                  <TableCell>{filteredTransactions.indexOf(transaction) + 1}</TableCell>
+                  <TableCell>
+                    {filteredTransactions.indexOf(transaction) + 1}
+                  </TableCell>
                   <TableCell>{transaction.order_id}</TableCell>
                   <TableCell>{transaction.payment_id}</TableCell>
                   <TableCell>{transaction.user?.name || "N/A"}</TableCell>

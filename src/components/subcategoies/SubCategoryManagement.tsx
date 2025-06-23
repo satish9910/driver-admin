@@ -330,7 +330,7 @@ export function SubCategoryManagement() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 ">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-10 w-24" />
@@ -354,7 +354,7 @@ export function SubCategoryManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ml-64 mt-14">
       {/* Header with Search and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-4">
@@ -478,7 +478,9 @@ export function SubCategoryManagement() {
             <TableBody>
               {filteredCategories.map((category) => (
                 <TableRow key={category.id} className="hover:bg-gray-50">
-                  <TableCell>{filteredCategories.indexOf(category) + 1}</TableCell>
+                  <TableCell>
+                    {filteredCategories.indexOf(category) + 1}
+                  </TableCell>
                   <TableCell>
                     <div className="font-medium">{category.name}</div>
                   </TableCell>

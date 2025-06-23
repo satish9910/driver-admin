@@ -24,7 +24,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Filter, Plus, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+import {
+  Search,
+  Filter,
+  Plus,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye,
+} from "lucide-react";
 import { Label } from "@/components/ui/label";
 
 const pages = [
@@ -93,15 +101,17 @@ export function StaticPagesManagement() {
     }
   };
 
-  const filteredPages = pages.filter(page => {
-    const matchesSearch = page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         page.slug.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || page.status === statusFilter;
+  const filteredPages = pages.filter((page) => {
+    const matchesSearch =
+      page.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      page.slug.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || page.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   return (
-    <div className="space-y-6 px-2 sm:px-4 md:px-8 max-w-full w-full mx-auto">
+    <div className="space-y-6 px-2 mx-auto ml-64 mt-14">
       {/* Header with Search and Filters */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
@@ -122,15 +132,25 @@ export function StaticPagesManagement() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setStatusFilter("all")}>All</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("published")}>Published</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("draft")}>Draft</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("archived")}>Archived</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+                All
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("published")}>
+                Published
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
+                Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("archived")}>
+                Archived
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <Button variant="outline" className="w-full md:w-auto">Analytics</Button>
+          <Button variant="outline" className="w-full md:w-auto">
+            Analytics
+          </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">
@@ -152,7 +172,10 @@ export function StaticPagesManagement() {
                   <Input id="slug" placeholder="Enter page slug" />
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsAddDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={() => setIsAddDialogOpen(false)}>
@@ -190,7 +213,9 @@ export function StaticPagesManagement() {
                   <TableRow key={page.id} className="hover:bg-gray-50">
                     <TableCell>{filteredPages.indexOf(page) + 1}</TableCell>
                     <TableCell className="font-medium">{page.title}</TableCell>
-                    <TableCell className="text-gray-500">/{page.slug}</TableCell>
+                    <TableCell className="text-gray-500">
+                      /{page.slug}
+                    </TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(page.status)}>
                         {page.status}

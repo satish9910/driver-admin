@@ -110,7 +110,7 @@ const VendorProfile = () => {
     userData.Address?.find((addr) => addr.isDefault) || userData.Address?.[0];
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen ml-56 mt-10">
       {/* <Sidebar
         activeSection="userProfile"
         onSectionChange={(section) => console.log(section)}
@@ -118,7 +118,7 @@ const VendorProfile = () => {
       <div className="flex-1 overflow-x-hidden overflow-y-auto">
         {/* <Header title="User Profile" /> */}
         <div className="p-6">
-          <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-6">
+          <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl p-6">
             {/* Header Section */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
               <div className="flex items-center mb-4 md:mb-0">

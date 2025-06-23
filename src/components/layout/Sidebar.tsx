@@ -48,7 +48,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
   return (
     <div
       className={cn(
-        "h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col",
+        "h-screen bg-white border-r border-gray-200 transition-all duration-300 flex flex-col fixed left-0 top-0 z-50",
         isCollapsed ? "w-16" : "w-64"
       )}
     >
@@ -61,7 +61,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
               <span className="font-semibold text-gray-900">Shopinger</span>
             </div>
           )}
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -72,7 +72,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             ) : (
               <X className="h-4 w-4" />
             )}
-          </Button>
+          </Button> */}
         </div>
       </div>
 

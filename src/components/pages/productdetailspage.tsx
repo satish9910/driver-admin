@@ -68,7 +68,7 @@ const ProductdetailsPage = () => {
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen max-w-6xl bg-white text-gray-900 ml-56 ">
       {/* Header */}
       {/* <Header title="Product Details" /> */}
 

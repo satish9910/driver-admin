@@ -217,7 +217,7 @@ const AddProductManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 ml-72 mt-10">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
           <div className="p-8 border-b border-gray-200">
