@@ -325,7 +325,7 @@ export function OrderManagement() {
                         {order.user.email}
                       </div>
                     </TableCell>
-                    <TableCell>${order.totalAmount}</TableCell>
+                    <TableCell>₹{order.totalAmount}</TableCell>
                     <TableCell>{totalItems}</TableCell>
                     <TableCell>
                       {getPaymentMethodName(order.paymentMode)}

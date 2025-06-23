@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -102,52 +101,44 @@ export function StaticPagesManagement() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-2 sm:px-4 md:px-8 max-w-full w-full mx-auto">
       {/* Header with Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+          <div className="relative w-full max-w-xs">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
               placeholder="Search pages..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-10"
+              className="w-full pl-10"
             />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 <Filter className="h-4 w-4 mr-2" />
                 Status: {statusFilter === "all" ? "All" : statusFilter}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("published")}>
-                Published
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("draft")}>
-                Draft
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("archived")}>
-                Archived
-              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("all")}>All</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("published")}>Published</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("draft")}>Draft</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatusFilter("archived")}>Archived</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">Analytics</Button>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button variant="outline" className="w-full md:w-auto">Analytics</Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="w-full md:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Page
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-lg w-full">
               <DialogHeader>
                 <DialogTitle>Add New Page</DialogTitle>
               </DialogHeader>
@@ -160,7 +151,7 @@ export function StaticPagesManagement() {
                   <Label htmlFor="slug">Slug</Label>
                   <Input id="slug" placeholder="Enter page slug" />
                 </div>
-                <div className="flex justify-end space-x-2">
+                <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
                   </Button>
@@ -175,63 +166,67 @@ export function StaticPagesManagement() {
       </div>
 
       {/* Pages Table */}
-      <Card>
+      <Card className="overflow-x-auto w-full">
         <CardHeader>
           <CardTitle>Static Pages ({filteredPages.length})</CardTitle>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Slug</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Views</TableHead>
-                <TableHead>Last Modified</TableHead>
-                <TableHead>Author</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredPages.map((page) => (
-                <TableRow key={page.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{page.title}</TableCell>
-                  <TableCell className="text-gray-500">/{page.slug}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(page.status)}>
-                      {page.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{page.views}</TableCell>
-                  <TableCell>{page.lastModified}</TableCell>
-                  <TableCell>{page.author}</TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Preview
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table className="min-w-[700px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>#</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Slug</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Views</TableHead>
+                  <TableHead>Last Modified</TableHead>
+                  <TableHead>Author</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredPages.map((page) => (
+                  <TableRow key={page.id} className="hover:bg-gray-50">
+                    <TableCell>{filteredPages.indexOf(page) + 1}</TableCell>
+                    <TableCell className="font-medium">{page.title}</TableCell>
+                    <TableCell className="text-gray-500">/{page.slug}</TableCell>
+                    <TableCell>
+                      <Badge className={getStatusColor(page.status)}>
+                        {page.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{page.views}</TableCell>
+                    <TableCell>{page.lastModified}</TableCell>
+                    <TableCell>{page.author}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Preview
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
