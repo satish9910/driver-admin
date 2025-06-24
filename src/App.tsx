@@ -35,6 +35,7 @@ import AboutUsPage from "./components/pages/aboutus";
 // import ContactUsPage from "./components/pages/ContactUsPage";
 import PrivacyPolicyPage from "./components/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./components/pages/TermsOfServicePage";
+import RefundPolicy from "./components/pages/refundpolicy";
 import React from "react";
 
 const queryClient = new QueryClient();
@@ -150,11 +151,11 @@ const sectionRoutes = [
     element: <PrivacyPolicyPage />,
   },
 
-  // {
-  //   path: "/contactus",
-  //   key: "contactus",
-  //   element: <ContactUsPage />,
-  // },
+  {
+    path: "/refundpolicy",
+    key: "refundpolicy",
+    element: <RefundPolicy />,
+  },
 
   {
     path: "/termsofservice",

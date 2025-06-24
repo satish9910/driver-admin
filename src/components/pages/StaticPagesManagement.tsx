@@ -75,18 +75,18 @@ const pages = [
     lastModified: "2024-01-05",
     author: "Admin",
     views: 0,
-    path: "/refund-policy",
+    path: "/refundpolicy",
   },
-  {
-    id: 5,
-    title: "Shipping Information",
-    slug: "shipping-info",
-    status: "published",
-    lastModified: "2024-01-03",
-    author: "Admin",
-    views: 421,
-    path: "/shipping-info",
-  },
+  // {
+  //   id: 5,
+  //   title: "Shipping Information",
+  //   slug: "shipping-info",
+  //   status: "published",
+  //   lastModified: "2024-01-03",
+  //   author: "Admin",
+  //   views: 421,
+  //   path: "/shipping-info",
+  // },
 ];
 
 export function StaticPagesManagement() {
