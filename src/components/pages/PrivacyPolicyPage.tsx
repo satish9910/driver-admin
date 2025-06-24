@@ -1,23 +1,30 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
+import Modal from "react-modal";
+
+// Make sure to bind modal to your appElement (http://reactcommunity.org/react-modal/accessibility/)
+Modal.setAppElement("#root");
 
 const PrivacyPolicy = () => {
-  const [formData, setFormData] = useState({
-    title: "Privacy Policy",
+  const [aboutData, setAboutData] = useState({
+    title: "",
     description: "",
     image: null,
-    previewImage: null,
+    previewImage: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [existingData, setExistingData] = useState(null);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
   const token = Cookies.get("admin_token");
-  // Fetch existing privacy policy data
+
+  // Fetch existing about us data
   useEffect(() => {
-    const fetchPrivacyPolicy = async () => {
+    const fetchAboutUs = async () => {
       try {
+        setIsLoading(true);
         const response = await axios.get(
           `${import.meta.env.VITE_BASE_UR}admin/get-privacy-policy`,
           {
@@ -26,31 +33,23 @@ const PrivacyPolicy = () => {
             },
           }
         );
-        if (response.data) {
-          setExistingData(response.data);
-          setFormData({
-            title: response.data.title || "Privacy Policy",
-            description: response.data.description || "",
-            previewImage: response.data.imageUrl || null,
-          });
-          setIsEditing(true);
+
+        if (response.data && response.data.data) {
+          setExistingData(response.data.data);
         }
-        toast.success(
-          response.data
-            ? "Privacy Policy fetched successfully!"
-            : "No existing Privacy Policy found."
-        );
       } catch (error) {
-        console.error("Error fetching privacy policy:", error);
+        console.error("Error fetching privacy policy data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchPrivacyPolicy();
+    fetchAboutUs();
   }, []);
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setAboutData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -59,7 +58,7 @@ const PrivacyPolicy = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData((prev) => ({
+      setAboutData((prev) => ({
         ...prev,
         image: file,
         previewImage: URL.createObjectURL(file),
@@ -67,57 +66,132 @@ const PrivacyPolicy = () => {
     }
   };
 
+  const openEditModal = () => {
+    if (existingData) {
+      setAboutData({
+        title: existingData.title || "",
+        description: existingData.description || "",
+        image: null,
+        previewImage: existingData.image || "",
+      });
+    }
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
-    const data = new FormData();
-    data.append("title", formData.title);
-    data.append("description", formData.description);
-    if (formData.image) {
-      data.append("image", formData.image);
+    const formData = new FormData();
+    formData.append("title", aboutData.title);
+    formData.append("description", aboutData.description);
+    if (aboutData.image) {
+      formData.append("image", aboutData.image);
     }
 
+    const token = Cookies.get("admin_token") || localStorage.getItem("token");
+
     try {
-      const url = isEditing
-        ? `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`
-        : `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`;
-
-      const response = await axios({
-        method: isEditing ? "post" : "post",
-        url: url,
-        data: data,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      toast.success(
-        `Privacy Policy ${isEditing ? "updated" : "added"} successfully!`
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_UR}admin/add-privacy-policy`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-      setExistingData(response.data);
-      setIsEditing(true);
+
+      if (response.data && response.data.data) {
+        setExistingData(response.data.data);
+        toast.success(
+          existingData
+            ? "Privacy Policy updated successfully!"
+            : "Privacy Policy created successfully!"
+        );
+      }
+      closeModal();
     } catch (error) {
-      console.error("Error:", error);
-      toast.error(`Failed to ${isEditing ? "update" : "add"} Privacy Policy`);
+      console.error("Error submitting privacy policy data:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "An error occurred while saving Privacy Policy data"
+      );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Privacy Policy Management
-      </h1>
+      <ToastContainer position="top-right" autoClose={5000} />
+      <h1 className="text-2xl font-bold mb-6">Privacy Policy Management</h1>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {isLoading && !existingData ? (
+          <p>Loading...</p>
+        ) : existingData ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">
+                {existingData.title}
+              </h2>
+              <p className="text-gray-700 whitespace-pre-line">
+                {existingData.description}
+              </p>
+            </div>
+            {existingData.image && (
+              <div className="mb-4">
+                <img
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                    existingData.image
+                  }`}
+                  alt="Privacy Policy"
+                  className="max-w-full h-auto max-h-60 rounded-md"
+                />
+              </div>
+            )}
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Add Privacy Policy
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-4">No Privacy Policy content found.</p>
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Create Privacy Policy
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Add Privacy Policy"
+        className="modal-content bg-white rounded-lg shadow-xl p-6 w-[60%] mx-auto my-12"
+        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-20"
+      >
+        <h2 className="text-2xl font-bold mb-6">
+          {existingData ? "Edit Privacy Policy" : "Create Privacy Policy"}
+        </h2>
         <form onSubmit={handleSubmit}>
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
               Title
             </label>
@@ -125,35 +199,35 @@ const PrivacyPolicy = () => {
               type="text"
               id="title"
               name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={aboutData.title}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
               Description
             </label>
             <textarea
               id="description"
               name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={12}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={aboutData.description}
+              onChange={handleInputChange}
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="image"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
               Image
             </label>
@@ -163,60 +237,51 @@ const PrivacyPolicy = () => {
               name="image"
               accept="image/*"
               onChange={handleImageChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            {formData.previewImage && (
-              <div className="mt-4">
-                <img
-                  src={formData.previewImage}
-                  alt="Preview"
-                  className="max-w-xs max-h-40 object-contain border border-gray-200 rounded"
-                />
-              </div>
-            )}
           </div>
 
-          <div className="flex justify-end">
+          {aboutData.previewImage && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Image Preview:
+              </p>
+              <img
+                src={
+                  aboutData.previewImage.startsWith("blob:")
+                    ? aboutData.previewImage
+                    : `${import.meta.env.VITE_BASE_URL_IMG}${
+                        aboutData.previewImage
+                      }`
+                }
+                alt="Preview"
+                className="max-w-full h-auto max-h-40 rounded-md"
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
-              disabled={loading}
-              className={`px-6 py-2 rounded-md text-white ${
-                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              disabled={isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : isEditing ? (
-                "Update Privacy Policy"
-              ) : (
-                "Add Privacy Policy"
-              )}
+              {isLoading
+                ? "Saving..."
+                : existingData
+                ? "Update Privacy Policy"
+                : "Save Privacy Policy"}
             </button>
           </div>
         </form>
-      </div>
+      </Modal>
     </div>
   );
 };

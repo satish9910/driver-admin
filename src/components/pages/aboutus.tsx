@@ -3,6 +3,10 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
+import Modal from "react-modal";
+
+// Make sure to bind modal to your appElement (http://reactcommunity.org/react-modal/accessibility/)
+Modal.setAppElement("#root");
 
 const AboutUsPage = () => {
   const [aboutData, setAboutData] = useState({
@@ -12,10 +16,11 @@ const AboutUsPage = () => {
     previewImage: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-  const [existingImage, setExistingImage] = useState("");
+  const [existingData, setExistingData] = useState(null);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const token = Cookies.get("admin_token");
 
-  // Fetch existing about us data if available
+  // Fetch existing about us data
   useEffect(() => {
     const fetchAboutUs = async () => {
       try {
@@ -24,26 +29,14 @@ const AboutUsPage = () => {
           `${import.meta.env.VITE_BASE_UR}admin/get-about-us`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
+              Authorization: `Bearer ${token}`,
             },
           }
         );
 
         if (response.data && response.data.data) {
-          setAboutData({
-            title: response.data.data.title || "",
-            description: response.data.data.description || "",
-            image: null,
-            previewImage: response.data.data.imageUrl || "",
-          });
-          setExistingImage(response.data.data.imageUrl || "");
-          setEditMode(true);
+          setExistingData(response.data.data);
         }
-        toast.success(
-          editMode
-            ? "About Us updated successfully!"
-            : "About Us created successfully!"
-        );
       } catch (error) {
         console.error("Error fetching about us data:", error);
       } finally {
@@ -73,6 +66,22 @@ const AboutUsPage = () => {
     }
   };
 
+  const openEditModal = () => {
+    if (existingData) {
+      setAboutData({
+        title: existingData.title || "",
+        description: existingData.description || "",
+        image: null,
+        previewImage: existingData.image || "",
+      });
+    }
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -84,7 +93,7 @@ const AboutUsPage = () => {
       formData.append("image", aboutData.image);
     }
 
-    const token = Cookies.get("admin_token");
+    const token = Cookies.get("admin_token") || localStorage.getItem("token");
 
     try {
       const response = await axios.post(
@@ -98,15 +107,15 @@ const AboutUsPage = () => {
         }
       );
 
-      toast.success(
-        editMode
-          ? "About Us updated successfully!"
-          : "About Us created successfully!"
-      );
-      setEditMode(true);
-      if (response.data && response.data.data && response.data.data.imageUrl) {
-        setExistingImage(response.data.data.imageUrl);
+      if (response.data && response.data.data) {
+        setExistingData(response.data.data);
+        toast.success(
+          existingData
+            ? "About Us updated successfully!"
+            : "About Us created successfully!"
+        );
       }
+      closeModal();
     } catch (error) {
       console.error("Error submitting about us data:", error);
       toast.error(
@@ -123,7 +132,61 @@ const AboutUsPage = () => {
       <ToastContainer position="top-right" autoClose={5000} />
       <h1 className="text-2xl font-bold mb-6">About Us Management</h1>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {isLoading && !existingData ? (
+          <p>Loading...</p>
+        ) : existingData ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">
+                {existingData.title}
+              </h2>
+              <p className="text-gray-700 whitespace-pre-line">
+                {existingData.description}
+              </p>
+            </div>
+            {existingData.image && (
+              <div className="mb-4">
+                <img
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                    existingData.image
+                  }`}
+                  alt="About Us"
+                  className="max-w-full h-auto max-h-60 rounded-md"
+                />
+              </div>
+            )}
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Add About Us
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-4">No About Us content found.</p>
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Create About Us
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Add About Us"
+        className="bg-white rounded-lg shadow-xl p-6 w-[60%] my-12 mx-auto "
+        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center  mt-20"
+      >
+        <h2 className="text-2xl font-bold mb-6">
+          {existingData ? "Edit About Us" : "Create About Us"}
+        </h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label
@@ -178,20 +241,33 @@ const AboutUsPage = () => {
             />
           </div>
 
-          {(aboutData.previewImage || existingImage) && (
+          {aboutData.previewImage && (
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-700 mb-1">
                 Image Preview:
               </p>
               <img
-                src={aboutData.previewImage || existingImage}
+                src={
+                  aboutData.previewImage.startsWith("blob:")
+                    ? aboutData.previewImage
+                    : `${import.meta.env.VITE_BASE_URL_IMG}${
+                        aboutData.previewImage
+                      }`
+                }
                 alt="Preview"
-                className="max-w-full h-auto max-h-60 rounded-md"
+                className="max-w-full h-auto max-h-40 rounded-md"
               />
             </div>
           )}
 
-          <div className="flex justify-end">
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={closeModal}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={isLoading}
@@ -199,13 +275,13 @@ const AboutUsPage = () => {
             >
               {isLoading
                 ? "Saving..."
-                : editMode
+                : existingData
                 ? "Update About Us"
                 : "Save About Us"}
             </button>
           </div>
         </form>
-      </div>
+      </Modal>
     </div>
   );
 };

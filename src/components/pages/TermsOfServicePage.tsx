@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Cookies from "js-cookie";
+import Modal from "react-modal";
+
+// Make sure to bind modal to your appElement (http://reactcommunity.org/react-modal/accessibility/)
+Modal.setAppElement("#root");
 
 const TermsOfServicePage = () => {
-  const [formData, setFormData] = useState({
-    title: "Terms and Conditions",
+  const [aboutData, setAboutData] = useState({
+    title: "",
     description: "",
     image: null,
-    previewImage: null,
+    previewImage: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [existingData, setExistingData] = useState(null);
-
+  const [modalIsOpen, setModalIsOpen] = useState(false);
   const token = Cookies.get("admin_token");
 
-  // Fetch existing terms data
+  // Fetch existing about us data
   useEffect(() => {
-    const fetchTerms = async () => {
+    const fetchAboutUs = async () => {
       try {
+        setIsLoading(true);
         const response = await axios.get(
           `${import.meta.env.VITE_BASE_UR}admin/get-terms-and-conditions`,
           {
@@ -28,26 +33,23 @@ const TermsOfServicePage = () => {
             },
           }
         );
-        if (response.data) {
-          setExistingData(response.data);
-          setFormData({
-            title: response.data.title || "Terms and Conditions",
-            description: response.data.description || "",
-            previewImage: response.data.imageUrl || null,
-          });
-          setIsEditing(true);
+
+        if (response.data && response.data.data) {
+          setExistingData(response.data.data);
         }
       } catch (error) {
-        console.error("Error fetching terms and conditions:", error);
+        console.error("Error fetching Terms & Conditions data:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchTerms();
+    fetchAboutUs();
   }, []);
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    setAboutData((prev) => ({
       ...prev,
       [name]: value,
     }));
@@ -56,7 +58,7 @@ const TermsOfServicePage = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData((prev) => ({
+      setAboutData((prev) => ({
         ...prev,
         image: file,
         previewImage: URL.createObjectURL(file),
@@ -64,59 +66,134 @@ const TermsOfServicePage = () => {
     }
   };
 
+  const openEditModal = () => {
+    if (existingData) {
+      setAboutData({
+        title: existingData.title || "",
+        description: existingData.description || "",
+        image: null,
+        previewImage: existingData.image || "",
+      });
+    }
+    setModalIsOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalIsOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setIsLoading(true);
 
-    const data = new FormData();
-    data.append("title", formData.title);
-    data.append("description", formData.description);
-    if (formData.image) {
-      data.append("image", formData.image);
+    const formData = new FormData();
+    formData.append("title", aboutData.title);
+    formData.append("description", aboutData.description);
+    if (aboutData.image) {
+      formData.append("image", aboutData.image);
     }
 
+    const token = Cookies.get("admin_token");
+
     try {
-      const url = isEditing
-        ? `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`
-        : `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`;
-
-      const response = await axios({
-        method: isEditing ? "post" : "post",
-        url: url,
-        data: data,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      toast.success(
-        `Terms and Conditions ${isEditing ? "updated" : "added"} successfully!`
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_UR}admin/add-terms-and-conditions`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
-      setExistingData(response.data);
-      setIsEditing(true);
+
+      if (response.data && response.data.data) {
+        setExistingData(response.data.data);
+        toast.success(
+          existingData
+            ? "Terms & Conditions updated successfully!"
+            : "Terms & Conditions created successfully!"
+        );
+      }
+      closeModal();
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error submitting Terms & Conditions data:", error);
       toast.error(
-        `Failed to ${isEditing ? "update" : "add"} Terms and Conditions`
+        error.response?.data?.message ||
+          "An error occurred while saving Terms & Conditions data"
       );
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Terms of Service Management
-      </h1>
+      <ToastContainer position="top-right" autoClose={5000} />
+      <h1 className="text-2xl font-bold mb-6">Terms & Conditions Management</h1>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        {isLoading && !existingData ? (
+          <p>Loading...</p>
+        ) : existingData ? (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold mb-2">
+                {existingData.title}
+              </h2>
+              <p className="text-gray-700 whitespace-pre-line">
+                {existingData.description}
+              </p>
+            </div>
+            {existingData.image && (
+              <div className="mb-4">
+                <img
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                    existingData.image
+                  }`}
+                  alt="Terms & Conditions"
+                  className="max-w-full h-auto max-h-60 rounded-md"
+                />
+              </div>
+            )}
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Add Terms & Conditions
+            </button>
+          </div>
+        ) : (
+          <div>
+            <p className="mb-4">No Terms & Conditions content found.</p>
+            <button
+              onClick={openEditModal}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              Create Terms & Conditions
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Edit Modal */}
+      <Modal
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        contentLabel="Add Terms & Conditions"
+        className="modal-content bg-white rounded-lg shadow-xl p-6 w-[60%] mx-auto my-12"
+        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-20"
+      >
+        <h2 className="text-2xl font-bold mb-6">
+          {existingData
+            ? "Edit Terms & Conditions"
+            : "Create Terms & Conditions"}
+        </h2>
         <form onSubmit={handleSubmit}>
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="title"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
               Title
             </label>
@@ -124,119 +201,89 @@ const TermsOfServicePage = () => {
               type="text"
               id="title"
               name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={aboutData.title}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Terms Content
+              Description
             </label>
             <textarea
               id="description"
               name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={15}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={aboutData.description}
+              onChange={handleInputChange}
+              rows={8}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               required
-              placeholder="Enter the terms and conditions content here..."
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <label
               htmlFor="image"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Featured Image
+              Image
             </label>
-            <div className="flex items-center gap-4">
-              <input
-                type="file"
-                id="image"
-                name="image"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              {formData.previewImage && (
-                <div className="shrink-0">
-                  <img
-                    src={formData.previewImage}
-                    alt="Preview"
-                    className="w-24 h-24 object-cover border border-gray-200 rounded"
-                  />
-                </div>
-              )}
-            </div>
-            <p className="mt-1 text-sm text-gray-500">
-              Upload an image that represents your terms (optional)
-            </p>
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
           </div>
 
-          <div className="flex justify-end gap-4">
+          {aboutData.previewImage && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-1">
+                Image Preview:
+              </p>
+              <img
+                src={
+                  aboutData.previewImage.startsWith("blob:")
+                    ? aboutData.previewImage
+                    : `${import.meta.env.VITE_BASE_URL_IMG}${
+                        aboutData.previewImage
+                      }`
+                }
+                alt="Preview"
+                className="max-w-full h-auto max-h-40 rounded-md"
+              />
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={() => {
-                setFormData({
-                  title: "Terms and Conditions",
-                  description: "",
-                  image: null,
-                  previewImage: null,
-                });
-                setIsEditing(false);
-              }}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={closeModal}
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
             >
-              Reset Form
+              Cancel
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className={`px-6 py-2 rounded-md text-white ${
-                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
-              } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              disabled={isLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              {loading ? (
-                <span className="flex items-center">
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Processing...
-                </span>
-              ) : isEditing ? (
-                "Update Terms"
-              ) : (
-                "Save Terms"
-              )}
+              {isLoading
+                ? "Saving..."
+                : existingData
+                ? "Update Terms & Conditions"
+                : "Save Terms & Conditions"}
             </button>
           </div>
         </form>
-      </div>
+      </Modal>
     </div>
   );
 };

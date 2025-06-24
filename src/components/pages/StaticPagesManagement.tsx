@@ -262,12 +262,12 @@ export function StaticPagesManagement() {
                           <DropdownMenuItem
                             onClick={() => handlePreview(page.path)}
                           >
-                            <Eye className="mr-2 h-4 w-4" />
-                            Preview
+                            <Edit className="mr-2 h-4 w-4" />
+                            ADD
                           </DropdownMenuItem>
                           <DropdownMenuItem>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
+                            <Eye className="mr-2 h-4 w-4" />
+                            preview
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
