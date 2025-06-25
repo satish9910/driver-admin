@@ -36,7 +36,7 @@ const sidebarItems = [
   { id: "addproducts", label: "Add Products", icon: Package },
   { id: "products", label: "Products", icon: Package },
   { id: "orders", label: "Orders", icon: ShoppingCart, badge: "12" },
-  // { id: "banners", label: "Banners", icon: Image },
+  { id: "banners", label: "Banners", icon: Image },
   { id: "transactions", label: "Transactions", icon: Wallet },
   { id: "pages", label: "Static Pages", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings },

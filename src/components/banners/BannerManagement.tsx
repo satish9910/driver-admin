@@ -29,6 +29,13 @@ import {
 import { Label } from "@/components/ui/label";
 import Cookies from "js-cookie";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Banner {
   id: number;
@@ -43,6 +50,27 @@ interface Banner {
   updatedAt: string;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  imgUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SubCategory {
+  id: number;
+  mainCategoryId: number;
+  name: string;
+  slug: string;
+  description: string;
+  imgUrl: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export function BannerManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -51,6 +79,11 @@ export function BannerManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentBanner, setCurrentBanner] = useState<Banner | null>(null);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [filteredSubCategories, setFilteredSubCategories] = useState<
+    SubCategory[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = Cookies.get("admin_token");
@@ -69,10 +102,31 @@ export function BannerManagement() {
   useEffect(() => {
     if (token) {
       fetchBanners();
+      fetchCategories();
+      fetchSubCategories();
     } else {
       setError("You are not authorized to view this page.");
     }
   }, [token]);
+
+  useEffect(() => {
+    if (formData.catId) {
+      const filtered = subCategories.filter(
+        (subCat) => subCat.mainCategoryId === Number(formData.catId)
+      );
+      setFilteredSubCategories(filtered);
+      // Reset subCatId when category changes if the current subCatId doesn't belong to the new category
+      if (
+        formData.subCatId &&
+        !filtered.some((subCat) => subCat.id === Number(formData.subCatId))
+      ) {
+        setFormData((prev) => ({ ...prev, subCatId: "" }));
+      }
+    } else {
+      setFilteredSubCategories([]);
+      setFormData((prev) => ({ ...prev, subCatId: "" }));
+    }
+  }, [formData.catId, subCategories]);
 
   const fetchBanners = async () => {
     try {
@@ -102,6 +156,68 @@ export function BannerManagement() {
       );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setCategories(data.categories);
+      } else {
+        throw new Error(data.message || "Failed to fetch categories");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to fetch categories",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchSubCategories = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch subcategories");
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        setSubCategories(data.subCategories);
+      } else {
+        throw new Error(data.message || "Failed to fetch subcategories");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to fetch subcategories",
+        variant: "destructive",
+      });
     }
   };
 
@@ -174,7 +290,9 @@ export function BannerManagement() {
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("catId", formData.catId);
+      formDataToSend.append("subCatId", formData.subCatId);
       formDataToSend.append("type", formData.type);
+      formDataToSend.append("status", formData.status);
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -226,6 +344,7 @@ export function BannerManagement() {
       formDataToSend.append("catId", formData.catId);
       formDataToSend.append("subCatId", formData.subCatId);
       formDataToSend.append("type", formData.type);
+      formDataToSend.append("status", formData.status);
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
@@ -319,9 +438,9 @@ export function BannerManagement() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-14 ml-72">
       {/* Header with Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 ">
         <div className="flex items-center space-x-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -398,26 +517,51 @@ export function BannerManagement() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="catId">Category ID</Label>
-                  <Input
-                    id="catId"
-                    name="catId"
-                    type="number"
-                    placeholder="Enter category ID"
+                  <Label>Main Category</Label>
+                  <Select
                     value={formData.catId}
-                    onChange={handleInputChange}
-                  />
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, catId: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
-                  <Label htmlFor="subCatId">Subcategory ID</Label>
-                  <Input
-                    id="subCatId"
-                    name="subCatId"
-                    type="number"
-                    placeholder="Enter subcategory ID"
+                  <Label>Subcategory</Label>
+                  <Select
                     value={formData.subCatId}
-                    onChange={handleInputChange}
-                  />
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, subCatId: value })
+                    }
+                    disabled={!formData.catId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a subcategory" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredSubCategories.map((subCat) => (
+                        <SelectItem
+                          key={subCat.id}
+                          value={subCat.id.toString()}
+                        >
+                          {subCat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor="image">Banner Image</Label>
@@ -493,8 +637,16 @@ export function BannerManagement() {
                   </p>
                 </div>
                 <div className="flex justify-between text-sm">
-                  {/* <span>Category: {banner.catId}</span>
-                  <span>Subcategory: {banner.subCatId}</span> */}
+                  <span>
+                    Category:{" "}
+                    {categories.find((cat) => cat.id === banner.catId)?.name ||
+                      banner.catId}
+                  </span>
+                  <span>
+                    Subcategory:{" "}
+                    {subCategories.find((sub) => sub.id === banner.subCatId)
+                      ?.name || banner.subCatId}
+                  </span>
                 </div>
                 <div className="text-xs text-gray-500">
                   Created: {new Date(banner.createdAt).toLocaleDateString()}
@@ -543,41 +695,65 @@ export function BannerManagement() {
               />
             </div>
             <div>
-              <Label htmlFor="edit-catId">Category ID</Label>
-              <Input
-                id="edit-catId"
-                name="catId"
-                type="number"
-                placeholder="Enter category ID"
+              <Label>Main Category</Label>
+              <Select
                 value={formData.catId}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-subCatId">Subcategory ID</Label>
-              <Input
-                id="edit-subCatId"
-                name="subCatId"
-                type="number"
-                placeholder="Enter subcategory ID"
-                value={formData.subCatId}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-status">Status</Label>
-              <select
-                id="edit-status"
-                name="status"
-                value={formData.status}
-                onChange={(e) =>
-                  setFormData({ ...formData, status: e.target.value })
+                onValueChange={(value) =>
+                  setFormData({ ...formData, catId: value })
                 }
-                className="w-full p-2 border rounded"
               >
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((category) => (
+                    <SelectItem
+                      key={category.id}
+                      value={category.id.toString()}
+                    >
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Subcategory</Label>
+              <Select
+                value={formData.subCatId}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, subCatId: value })
+                }
+                disabled={!formData.catId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a subcategory" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredSubCategories.map((subCat) => (
+                    <SelectItem key={subCat.id} value={subCat.id.toString()}>
+                      {subCat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status: value })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">Active</SelectItem>
+                  <SelectItem value="0">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor="edit-image">Banner Image</Label>
