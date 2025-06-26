@@ -9,12 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [userType, setUserType] = useState("admin"); // 'admin' or 'vendor'
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
@@ -27,29 +29,47 @@ const LoginPage = () => {
       formData.append("email", email);
       formData.append("password", password);
 
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}public/admin-login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: formData.toString(),
-        }
-      );
+      const endpoint = userType === "admin" 
+        ? `${import.meta.env.VITE_BASE_UR}public/admin-login`
+        : `${import.meta.env.VITE_BASE_UR}public/vendor-login`;
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString(),
+      });
 
       const data = await response.json();
 
       if (response.ok && data.token) {
-        // Save token in cookies
-        Cookies.set("admin_token", data.token, {
+        // Save token and role in cookies
+        Cookies.set(`${userType}_token`, data.token, {
+          expires: rememberMe ? 7 : undefined,
+          secure: true,
+          sameSite: "Lax",
+        });
+        
+        // Save user role in cookies
+        Cookies.set("user_role", userType, {
           expires: rememberMe ? 7 : undefined,
           secure: true,
           sameSite: "Lax",
         });
 
-        // Redirect to /index
-        navigate("/index");
+        // Save user data in cookies if needed
+        const userData = data[userType];
+        if (userData) {
+          Cookies.set("user_data", JSON.stringify(userData), {
+            expires: rememberMe ? 7 : undefined,
+            secure: true,
+            sameSite: "Lax",
+          });
+        }
+
+        // Redirect based on role
+        navigate(userType === "admin" ? "/admin/dashboard" : "/vendor/dashboard");
       } else {
         setError(data?.message || "Invalid credentials.");
       }
@@ -65,7 +85,7 @@ const LoginPage = () => {
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl mx-auto mb-4"></div>
           <h1 className="text-2xl font-bold text-gray-900">Shopinger</h1>
-          <p className="text-gray-600">Sign in to your admin account</p>
+          <p className="text-gray-600">Sign in to your account</p>
         </div>
 
         <Card>
@@ -77,6 +97,25 @@ const LoginPage = () => {
               {error && (
                 <p className="text-sm text-red-500 text-center">{error}</p>
               )}
+              
+              <div>
+                <Label>Login As</Label>
+                <RadioGroup 
+                  defaultValue="admin" 
+                  className="flex gap-4 mt-2"
+                  onValueChange={(value) => setUserType(value)}
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="admin" id="admin" />
+                    <Label htmlFor="admin">Admin</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="vendor" id="vendor" />
+                    <Label htmlFor="vendor">Vendor</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input

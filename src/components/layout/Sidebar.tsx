@@ -15,24 +15,26 @@ import {
   FileText,
   Menu,
   X,
-  Bell,
-  Search,
   LogOut,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  isAdmin: boolean;
 }
 
-const sidebarItems = [
+const adminSidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
   { id: "customers", label: "Customers", icon: Users },
   { id: "vendors", label: "Vendors", icon: Store, badge: "3" },
   { id: "pendingvendors", label: "Pending Vendors", icon: Store, badge: "3" },
   { id: "categories", label: "Categories", icon: Grid2x2 },
   { id: "subcategories", label: "Sub Categories", icon: Grid2x2 },
+  { id: "sub-sub-categories", label: "Sub Sub Categories", icon: Grid2x2 },
   { id: "addproducts", label: "Add Products", icon: Package },
   { id: "products", label: "Products", icon: Package },
   { id: "orders", label: "Orders", icon: ShoppingCart, badge: "12" },
@@ -42,8 +44,31 @@ const sidebarItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
+const vendorSidebarItems = [
+  { id: "dashboard", label: "Dashboard", icon: BarChart3 },
+  { id: "products", label: "My Products", icon: Package },
+  { id: "addproducts", label: "Add Products", icon: Package },
+  { id: "orders", label: "My Orders", icon: ShoppingCart, badge: "5" },
+];
+
+export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const sidebarItems = isAdmin ? adminSidebarItems : vendorSidebarItems;
+
+  const navigate = useNavigate();
+
+    const handleLogout = () => {
+    // Remove all auth-related cookies
+    Cookies.remove("admin_token");
+    Cookies.remove("vendor_token");
+    Cookies.remove("user_role");
+    Cookies.remove("user_data");
+  
+
+
+    // Redirect to login
+    navigate("/login");
+  };
 
   return (
     <div
@@ -58,10 +83,12 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
           {!isCollapsed && (
             <div className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg"></div>
-              <span className="font-semibold text-gray-900">Shopinger</span>
+              <span className="font-semibold text-gray-900">
+                {isAdmin ? "Shopinger Admin" : "My Vendor Portal"}
+              </span>
             </div>
           )}
-          {/* <Button
+          <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsCollapsed(!isCollapsed)}
@@ -72,7 +99,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             ) : (
               <X className="h-4 w-4" />
             )}
-          </Button> */}
+          </Button>
         </div>
       </div>
 
@@ -90,8 +117,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
                 className={cn(
                   "w-full justify-start h-10 px-3",
                   isCollapsed ? "px-2" : "px-3",
-                  isActive &&
-                    "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+                  isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
                 )}
                 onClick={() => onSectionChange(item.id)}
               >
@@ -111,26 +137,42 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
       </ScrollArea>
 
       {/* Footer */}
-      {/* <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200">
         {!isCollapsed ? (
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                John Doe
+                {isAdmin ? "Admin User" : "Vendor Account"}
               </p>
-              <p className="text-xs text-gray-500 truncate">Super Admin</p>
+              <p className="text-xs text-gray-500 truncate">
+                {isAdmin ? "Super Admin" : "Verified Vendor"}
+              </p>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => {
+                // Add logout logic here
+                localStorage.clear();
+                window.location.href = "/login";
+              }}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         ) : (
-          <Button variant="ghost" size="icon" className="w-full h-10">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="w-full h-10"
+            onClick={() => handleLogout}
+          >
             <LogOut className="h-4 w-4" />
           </Button>
         )}
-      </div> */}
+      </div>
     </div>
   );
 }

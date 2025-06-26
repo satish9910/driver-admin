@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,8 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie"; // Make sure to install js-cookie if not already
 
+
+
 interface HeaderProps {
   title: string;
   subtitle?: string;
@@ -21,10 +24,44 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const role = Cookies.get("user_role");
+   
+  const isAdmin = role === "admin";
+ 
+
+  const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const handleLogout = () => {
+    // Remove all auth-related cookies
+    Cookies.remove("admin_token");
+    Cookies.remove("vendor_token");
+    Cookies.remove("user_role");
+    Cookies.remove("user_data");
+    setIsLoggedIn(false);
+
+
+    // Redirect to login
+    navigate("/login");
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirm(false);
+    handleLogout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
 
   useEffect(() => {
     // Check for token in cookies when component mounts
-    const token = Cookies.get("admin_token"); // Replace 'authToken' with your actual cookie name
+    const token = isAdmin ? Cookies.get("admin_token"): Cookies.get("vendor_token");
     setIsLoggedIn(!!token);
   }, []);
 
@@ -94,10 +131,7 @@ export function Header({ title, subtitle }: HeaderProps) {
                 Settings
               </DropdownMenuItem> */}
               <DropdownMenuItem
-                onClick={() => {
-                  Cookies.remove("admin_token"); // Remove the token on logout
-                  setIsLoggedIn(false);
-                }}
+                onClick={handleLogout}
               >
                 Logout
               </DropdownMenuItem>

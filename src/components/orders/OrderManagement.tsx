@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
 
 import {
   Table,
@@ -92,31 +93,67 @@ export function OrderManagement() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+const role = Cookies.get("user_role");
+const isAdmin = role === "admin";
+const isVendor = role === "vendor";
+const navigate = useNavigate();
 
-  const token = Cookies.get("admin_token");
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        const data = await response.json();
-        setOrders(data);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-        setLoading(false);
+
+// Get the appropriate token based on role
+const token = isAdmin ? Cookies.get("admin_token") : Cookies.get("vendor_token");
+
+  const [error, setError] = useState<string | null>(null);
+
+  // Function to handle order details
+  const handleOrderDetails = (orderId: number) => {
+    if (isAdmin) {
+   
+      navigate(`/admin/orderdetails/${orderId}`);
+    } else if (isVendor) {
+     
+      navigate(`/vendor/orderdetails/${orderId}`);
+    }
+  };
+
+
+
+useEffect(() => {
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      
+      let apiUrl = "";
+      if (isAdmin) {
+        apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`;
+      } else if (isVendor) {
+        apiUrl = `${import.meta.env.VITE_BASE_UR}vendor/get-all-orders`;
+      } else {
+        throw new Error("Unauthorized access - Invalid user role");
       }
-    };
 
-    fetchOrders();
-  }, []);
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch orders: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setOrders(data.data || data); // Handle different response structures
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchOrders();
+}, []); // Empty dependency array means this runs once on mount
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -347,7 +384,7 @@ export function OrderManagement() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
                               onClick={() =>
-                                (window.location.href = `/orderdetails/${order.id}`)
+                               handleOrderDetails(order.id) // Function to handle order details
                               }
                             >
                               <Eye className="mr-2 h-4 w-4" />

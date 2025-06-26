@@ -1,8 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { useParams, useNavigate } from "react-router-dom";
 
-const AddProductManagement = () => {
+const UpdateProductManagement = () => {
+
+  
+  const id  = useParams().productId;
+
+  const navigate = useNavigate();
   const [product, setProduct] = useState({
     name: "",
     description: "",
@@ -24,6 +30,7 @@ const AddProductManagement = () => {
     ],
   });
   const [images, setImages] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [mainCategories, setMainCategories] = useState([]);
@@ -32,19 +39,66 @@ const AddProductManagement = () => {
   const [vendors, setVendors] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const fileInputRef = useRef(null);
-  const role = Cookies.get("user_role");
-  const vendorId =JSON.parse(Cookies.get("user_data"))?.id
 
-
-  const isAdmin = role === "admin";
-  const isVendor = role === "vendor";
-  
-
-  const token = Cookies.get("admin_token");
+  const token = Cookies.get("admin_token") || Cookies.get("vendor_token");
+  const isAdmin = Cookies.get("user_role") === "admin";
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch product data
+        const productResponse = await axios.get(
+          `${import.meta.env.VITE_BASE_UR}${
+            isAdmin ? "admin" : "vendor"
+          }/get-product/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        
+        const productData = productResponse.data.data;
+        console.log("Fetched product data:", productData);
+        setProduct({
+          name: productData.name || "",
+          description: productData.description || "",
+          mainCategoryId: productData.mainCategoryId?.toString() || "",
+          subCategoryId: productData.subCategoryId?.toString() || "",
+          subSubCategoryId: productData.subSubCategoryId?.toString() || "",
+          vendorId: productData.vendorId?.toString() || "",
+          variants: productData.variants && productData.variants.length > 0
+            ? productData.variants.map(variant => ({
+          sku: variant.sku || "",
+          price: variant.price?.toString() || "",
+          stock: variant.stock?.toString() || "",
+          sellingprice: variant.sellingprice?.toString() || "",
+          attributes: variant.attributes || [
+            { name: "color", value: "" },
+            { name: "size", value: "" },
+          ],
+              }))
+            : [
+          {
+            sku: "",
+            price: "",
+            stock: "",
+            sellingprice: "",
+            attributes: [
+              { name: "color", value: "" },
+              { name: "size", value: "" },
+            ],
+          },
+              ],
+        });
+
+        // Flatten all variant images into a single array for display
+        setExistingImages(
+          productData.variants
+            .flatMap((variant) => Array.isArray(variant.images) ? variant.images : [])
+        );
+        console.log("Existing images:", existingImages);
+
         // Fetch main categories with their subcategories and sub-subcategories
         const mainCategoriesResponse = await axios.get(
           `${import.meta.env.VITE_BASE_UR}web/get-all-category`,
@@ -54,9 +108,26 @@ const AddProductManagement = () => {
             },
           }
         );
+        
         setMainCategories(mainCategoriesResponse.data.categories || []);
 
-        // Fetch vendors only if admin
+        // If product has main category, fetch its subcategories
+        if (productData.mainCategoryId) {
+          const selectedMainCategory = mainCategoriesResponse.data.categories.find(
+            cat => cat.id === productData.mainCategoryId
+          );
+          setSubCategories(selectedMainCategory?.subCategories || []);
+
+          // If product has sub category, fetch its sub-subcategories
+          if (productData.subCategoryId) {
+            const selectedSubCategory = selectedMainCategory?.subCategories.find(
+              subCat => subCat.id === productData.subCategoryId
+            );
+            setSubSubCategories(selectedSubCategory?.subSubCategories || []);
+          }
+        }
+
+        // Fetch vendors (only for admin)
         if (isAdmin) {
           const vendorsResponse = await axios.get(
             `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
@@ -76,7 +147,7 @@ const AddProductManagement = () => {
     };
 
     fetchData();
-  }, []);
+  }, [id, token, isAdmin]);
 
   useEffect(() => {
     // When main category changes, update sub categories
@@ -85,11 +156,14 @@ const AddProductManagement = () => {
         (cat) => cat.id === parseInt(product.mainCategoryId)
       );
       setSubCategories(selectedMainCategory?.subCategories || []);
-      setProduct(prev => ({
-        ...prev,
-        subCategoryId: "",
-        subSubCategoryId: ""
-      }));
+      setSubSubCategories([]);
+      if (selectedMainCategory?.subCategories?.length === 0) {
+        setProduct(prev => ({
+          ...prev,
+          subCategoryId: "",
+          subSubCategoryId: ""
+        }));
+      }
     }
   }, [product.mainCategoryId, mainCategories]);
 
@@ -100,10 +174,12 @@ const AddProductManagement = () => {
         (subCat) => subCat.id === parseInt(product.subCategoryId)
       );
       setSubSubCategories(selectedSubCategory?.subSubCategories || []);
-      setProduct(prev => ({
-        ...prev,
-        subSubCategoryId: ""
-      }));
+      if (selectedSubCategory?.subSubCategories?.length === 0) {
+        setProduct(prev => ({
+          ...prev,
+          subSubCategoryId: ""
+        }));
+      }
     }
   }, [product.subCategoryId, subCategories]);
 
@@ -170,6 +246,10 @@ const AddProductManagement = () => {
     setImages([...e.target.files]);
   };
 
+  const removeExistingImage = (index) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
@@ -186,57 +266,35 @@ const AddProductManagement = () => {
       formData.append("mainCategoryId", product.mainCategoryId);
       formData.append("subCategoryId", product.subCategoryId);
       formData.append("subSubCategoryId", product.subSubCategoryId);
-      formData.append("vendorId", isAdmin ? product.vendorId : vendorId);
+      if (isAdmin) {
+        formData.append("vendorId", product.vendorId);
+      }
       formData.append("variants", JSON.stringify(product.variants));
+      // formData.append("existingImages", JSON.stringify(existingImages));
 
       images.forEach((image, index) => {
-        formData.append(`images_${index}`, image);
+        formData.append(`images_0`, image);
       });
 
-      const token = isVendor
-    ? Cookies.get("vendor_token")
-      :  Cookies.get("admin_token");
-      const apiUrl =
-         isVendor
-          ? `${import.meta.env.VITE_BASE_UR}vendor/add-product`
-          : `${import.meta.env.VITE_BASE_UR}admin/add-product`;
-
-      await axios.post(
-        apiUrl,
+      await axios.put(
+        `${import.meta.env.VITE_BASE_UR}${
+          isAdmin ? "admin" : "vendor"
+        }/update-product/${id}`,
         formData,
         {
           headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
 
       setSuccess(true);
-      // Reset form
-      setProduct({
-        name: "",
-        description: "",
-        mainCategoryId: "",
-        subCategoryId: "",
-        subSubCategoryId: "",
-        vendorId: "",
-        variants: [
-          {
-            sku: "",
-            price: "",
-            stock: "",
-            sellingprice: "",
-            attributes: [
-              { name: "color", value: "" },
-              { name: "size", value: "" },
-            ],
-          },
-        ],
-      });
-      setImages([]);
+      setTimeout(() => {
+        navigate(isAdmin ? "/admin/products" : "/vendor/products");
+      }, 1500);
     } catch (error) {
-      console.error("Error adding product:", error);
+      console.error("Error updating product:", error);
     } finally {
       setIsLoading(false);
     }
@@ -274,7 +332,7 @@ const AddProductManagement = () => {
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-green-800">
-                      Product added successfully!
+                      Product updated successfully!
                     </h3>
                   </div>
                 </div>
@@ -296,7 +354,7 @@ const AddProductManagement = () => {
                     id="name"
                     value={product.name}
                     onChange={handleChange}
-                    required
+                    
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                   />
                 </div>
@@ -313,7 +371,7 @@ const AddProductManagement = () => {
                     name="mainCategoryId"
                     value={product.mainCategoryId}
                     onChange={handleChange}
-                    required
+                    
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                   >
                     <option value="">Select a category</option>
@@ -339,7 +397,7 @@ const AddProductManagement = () => {
                     name="subCategoryId"
                     value={product.subCategoryId}
                     onChange={handleChange}
-                    required
+                    
                     disabled={!product.mainCategoryId}
                     className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                   >
@@ -391,7 +449,7 @@ const AddProductManagement = () => {
                       name="vendorId"
                       value={product.vendorId}
                       onChange={handleChange}
-                      required
+                      
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                     >
                       <option value="">Select a vendor</option>
@@ -403,9 +461,6 @@ const AddProductManagement = () => {
                     </select>
                   </div>
                 </div>
-              )}
-              {isVendor && (
-                <input type="hidden" name="vendorId" value={vendorId} />
               )}
 
               <div>
@@ -421,7 +476,7 @@ const AddProductManagement = () => {
                   rows={4}
                   value={product.description}
                   onChange={handleChange}
-                  required
+                  
                   className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                 />
               </div>
@@ -483,7 +538,7 @@ const AddProductManagement = () => {
                             onChange={(e) =>
                               handleVariantChange(variantIndex, e)
                             }
-                            required
+                            
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                           />
                         </div>
@@ -508,7 +563,7 @@ const AddProductManagement = () => {
                               onChange={(e) =>
                                 handleVariantChange(variantIndex, e)
                               }
-                              required
+                              
                               className="border border-gray-300 block w-full pl-7 pr-5 sm:text-sm rounded-md py-2 px-3"
                               placeholder="0.00"
                               min="0"
@@ -531,7 +586,7 @@ const AddProductManagement = () => {
                             onChange={(e) =>
                               handleVariantChange(variantIndex, e)
                             }
-                            required
+                            
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                             min="0"
                           />
@@ -556,7 +611,7 @@ const AddProductManagement = () => {
                             onChange={(e) =>
                               handleVariantChange(variantIndex, e)
                             }
-                            required
+                            
                             className="border border-gray-300 block w-[300px] pl-7 pr-4 sm:text-sm rounded-md py-2 px-3"
                             placeholder="0.00"
                             min="0"
@@ -704,20 +759,21 @@ const AddProductManagement = () => {
                     </p>
                   </div>
                 </div>
-                {images.length > 0 && (
-                  <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                    {Array.from(images).map((image, index) => (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    Existing Images
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                    {existingImages.map((image, index) => (
                       <div key={index} className="relative">
                         <img
-                          src={URL.createObjectURL(image)}
+                          src={`${import.meta.env.VITE_BASE_URL_IMG}${image}`}
                           alt={`Preview ${index}`}
                           className="h-24 w-full object-cover rounded"
                         />
                         <button
                           type="button"
-                          onClick={() =>
-                            setImages((prev) => prev.filter((_, i) => i !== index))
-                          }
+                          onClick={() => removeExistingImage(index)}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                         >
                           <svg
@@ -738,6 +794,46 @@ const AddProductManagement = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+                {images.length > 0 && (
+                  <div className="mt-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      New Images
+                    </h4>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                      {Array.from(images).map((image, index) => (
+                        <div key={index} className="relative">
+                          <img
+                            src={URL.createObjectURL(image)}
+                            alt={`Preview ${index}`}
+                            className="h-24 w-full object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setImages((prev) => prev.filter((_, i) => i !== index))
+                            }
+                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 
@@ -745,6 +841,7 @@ const AddProductManagement = () => {
                 <div className="flex justify-end">
                   <button
                     type="button"
+                    onClick={() => navigate(isAdmin ? "/admin/products" : "/vendor/products")}
                     className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gold-500"
                   >
                     Cancel
@@ -776,10 +873,10 @@ const AddProductManagement = () => {
                             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                           ></path>
                         </svg>
-                        Processing...
+                        Updating...
                       </>
                     ) : (
-                      "Add Product"
+                      "Update Product"
                     )}
                   </button>
                 </div>
@@ -792,4 +889,4 @@ const AddProductManagement = () => {
   );
 };
 
-export default AddProductManagement;
+export default UpdateProductManagement;

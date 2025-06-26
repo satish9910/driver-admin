@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -74,9 +75,29 @@ export function ProductManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const role = Cookies.get("user_role");
+  const isAdmin = role === "admin";
+  const isVendor = role === "vendor";
+
+  const navigate = useNavigate();
+
+  const handleDetailClick = (productId: number) => {
+    if (isAdmin) {
+      navigate(`/admin/productdetails/${productId}`);
+    } else if (isVendor) {
+      navigate(`/vendor/productdetails/${productId}`);
+    }
+  }
+
+  console.log("Role:", role);
+
   const productsPerPage = 10;
 
-  const token = Cookies.get("admin_token");
+  // Get the appropriate token based on role
+  const token = isAdmin
+    ? Cookies.get("admin_token")
+    : Cookies.get("vendor_token");
+
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -84,14 +105,21 @@ export function ProductManagement() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/get-all-products`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+
+      let apiUrl = "";
+      if (isAdmin) {
+        apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-products`;
+      } else if (isVendor) {
+        apiUrl = `${import.meta.env.VITE_BASE_UR}vendor/get-my-products`;
+      } else {
+        throw new Error("Unauthorized access");
+      }
+
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -107,6 +135,12 @@ export function ProductManagement() {
   };
 
   const handleDeleteProduct = async (productId: number) => {
+    // Only admin should be able to delete products
+    if (!isAdmin) {
+      setError("You don't have permission to delete products");
+      return;
+    }
+
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BASE_UR}admin/delete-product/${productId}`,
@@ -132,21 +166,10 @@ export function ProductManagement() {
 
       // Refresh the product list after successful deletion
       await fetchProducts();
-
-      toast({
-        title: "Success",
-        description: "Product deleted successfully",
-        variant: "default",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    } catch (err) {
+      setError(err.message);
     }
   };
-
   const getStatusColor = (stock: number) => {
     if (stock > 0) {
       return "bg-green-100 text-green-800";
@@ -203,6 +226,7 @@ export function ProductManagement() {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
 
   return (
     <div className="space-y-6 ml-64 mt-14">
@@ -338,7 +362,7 @@ export function ProductManagement() {
                   <TableCell>{filteredProducts.indexOf(product) + 1}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-3">
-                      {product.variants[0]?.images?.length > 0 && (
+                      {product?.variants[0]?.images?.length > 0 && (
                         <img
                           src={`${import.meta.env.VITE_BASE_URL_IMG}${
                             product.variants[0].images[0]
@@ -373,14 +397,20 @@ export function ProductManagement() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() =>
-                            (window.location.href = `/productdetails/${product.id}`)
-                          }
+                          onClick={() => handleDetailClick(product.id)}
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigate(
+                              isAdmin
+                                ? `/admin/product-update/${product.id}`
+                                : `/vendor/product-update/${product.id}`
+                            )
+                          }
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           Edit
                         </DropdownMenuItem>

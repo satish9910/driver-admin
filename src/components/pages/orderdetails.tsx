@@ -12,19 +12,23 @@ const OrderDetails = () => {
   const [updateError, setUpdateError] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedItemId, setSelectedItemId] = useState(null);
-  const token = Cookies.get("admin_token");
+  const role = Cookies.get("user_role");
+  const isAdmin = role === "admin";
+  const isVendor = role === "vendor";
+  const token = Cookies.get(isAdmin? "admin_token": "vendor_token");
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/get-order/${orderId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const url =
+          isAdmin
+            ? `${import.meta.env.VITE_BASE_UR}admin/get-order/${orderId}`
+            : `${import.meta.env.VITE_BASE_UR}vendor/get-order/${orderId}`;
+        const response = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setOrder(response.data);
         setLoading(false);
       } catch (err) {
@@ -34,7 +38,7 @@ const OrderDetails = () => {
     };
 
     fetchOrderDetails();
-  }, [orderId, token]);
+  }, [orderId, token, isAdmin, isVendor]);
 
   const updateOrderItemStatus = async () => {
     if (!selectedStatus || !selectedItemId) return;
@@ -43,8 +47,13 @@ const OrderDetails = () => {
     setUpdateError(null);
 
     try {
-      const response = await axios.put(
-        `${import.meta.env.VITE_BASE_UR}admin/update-order-status-admin`,
+      const url =
+        isAdmin
+          ? `${import.meta.env.VITE_BASE_UR}admin/update-order-status-admin`
+          : `${import.meta.env.VITE_BASE_UR}vendor/update-order-item-status`;
+
+      await axios.put(
+        url,
         new URLSearchParams({
           OrderItemStatus: selectedStatus,
           OrderItemId: selectedItemId.toString(),
@@ -350,7 +359,7 @@ const OrderDetails = () => {
                           {item.variant.product.name}
                         </h4>
                         <p className="text-sm text-gray-500 mt-1">
-                          Vendor: {item.vendor.name}
+                          Vendor: {item.vendor?.name}
                         </p>
                         {item.attributes.map((attr, idx) => (
                           <p key={idx} className="text-sm text-gray-500">

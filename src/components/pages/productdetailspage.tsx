@@ -11,19 +11,28 @@ const ProductdetailsPage = () => {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const token = Cookies.get("admin_token");
+  const role = Cookies.get("user_role");
+  const isAdmin = role === "admin";
+  const isVendor = role === "vendor";
+  const token = Cookies.get(isAdmin ? "admin_token" : "vendor_token");
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BASE_UR}admin/get-product/${productId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        let url = "";
+        let options: RequestInit = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+
+        if (isAdmin) {
+          url = `${import.meta.env.VITE_BASE_UR}admin/get-product/${productId}`;
+        } else if (isVendor) {
+          url = `${import.meta.env.VITE_BASE_UR}vendor/get-product/${productId}`;
+        }
+
+        const response = await fetch(url, options);
 
         if (!response.ok) {
           throw new Error("Failed to fetch product");
@@ -31,7 +40,7 @@ const ProductdetailsPage = () => {
 
         const data = await response.json();
         setProduct(data.data);
-      } catch (err) {
+      } catch (err: any) {
         setError(err.message);
       } finally {
         setLoading(false);
@@ -39,7 +48,7 @@ const ProductdetailsPage = () => {
     };
 
     fetchProduct();
-  }, [productId, token]);
+  }, [productId, token, isAdmin, isVendor]);
 
   if (loading)
     return (
