@@ -180,7 +180,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter basename="/admin">
+      <BrowserRouter basename="/admin/">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           
