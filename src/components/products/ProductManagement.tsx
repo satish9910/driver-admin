@@ -85,7 +85,7 @@ export function ProductManagement() {
     if (isAdmin) {
       navigate(`/productdetails/${productId}`);
     } else if (isVendor) {
-      navigate(`/productdetails/${productId}`);
+      navigate(`/vendor/productdetails/${productId}`);
     }
   }
 
@@ -407,7 +407,7 @@ export function ProductManagement() {
                             navigate(
                               isAdmin
                                 ? `/product-update/${product.id}`
-                                : `/product-update/${product.id}`
+                                : `/vendor/product-update/${product.id}`
                             )
                           }
                         >

@@ -112,7 +112,7 @@ const token = isAdmin ? Cookies.get("admin_token") : Cookies.get("vendor_token")
       navigate(`/orderdetails/${orderId}`);
     } else if (isVendor) {
      
-      navigate(`/orderdetails/${orderId}`);
+      navigate(`/vendor/orderdetails/${orderId}`);
     }
   };
 

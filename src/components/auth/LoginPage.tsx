@@ -66,7 +66,7 @@ const LoginPage = () => {
         }
 
         // Redirect based on role
-        navigate(userType === "admin" ? "/dashboard" : "/dashboard");
+        navigate(userType === "admin" ? "/dashboard" : "/vendor/dashboard");
       } else {
         setError(data?.message || "Invalid credentials.");
       }

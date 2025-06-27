@@ -113,13 +113,13 @@ const adminSectionRoutes = [
 ];
 
 const vendorSectionRoutes = [
-  { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/products", key: "products", element: <ProductManagement /> },
-  { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
-  { path: "/orders", key: "orders", element: <OrderManagement /> },
-  { path: "/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
-   { path: "/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
-  { path: "/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
+  { path: "/vendor/dashboard", key: "dashboard", element: <Dashboard /> },
+  { path: "/vendor/products", key: "products", element: <ProductManagement /> },
+  { path: "/vendor/addproducts", key: "addproducts", element: <AddProductManagement /> },
+  { path: "/vendor/orders", key: "orders", element: <OrderManagement /> },
+  { path: "/vendor/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
+   { path: "/vendor/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
+  { path: "/vendor/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
 ];
 
 // Layout components
@@ -159,7 +159,7 @@ function VendorLayout() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
         activeSection={activeSection}
-        onSectionChange={(section) => navigate(`/${section}`)}
+        onSectionChange={(section) => navigate(`/vendor/${section}`)}
         isAdmin={false}
       />
       <div className="flex-1 flex flex-col">
@@ -191,7 +191,7 @@ const App = () => (
                 {adminSectionRoutes.map(({ path, element }) => (
                   <Route key={path} path={path} element={element} />
                 ))}
-                <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
               </Route>
             </Route>
             
