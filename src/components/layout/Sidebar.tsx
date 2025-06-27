@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import logo from "../../../public/images/logo.png"
 import {
   BarChart3,
   Users,
@@ -83,7 +84,7 @@ export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProp
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex flex-col items-center space-x-2">
-               <img src="logo.png" alt="Shopinger Logo" className="mx-auto h-10 w-auto mb-2" />
+               <img src={logo} alt="Shopinger Logo" className="mx-auto h-10 w-auto mb-2" />
               {/* <span className="font-semibold text-gray-900">
                 {isAdmin ? " Admin" : " Vendor"}
               </span> */}
