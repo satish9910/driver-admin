@@ -47,15 +47,13 @@ const LoginPage = () => {
         // Save token and role in cookies
         Cookies.set(`${userType}_token`, data.token, {
           expires: rememberMe ? 7 : undefined,
-          secure: true,
-          sameSite: "Lax",
+        
         });
         
         // Save user role in cookies
         Cookies.set("user_role", userType, {
           expires: rememberMe ? 7 : undefined,
-          secure: true,
-          sameSite: "Lax",
+        
         });
 
         // Save user data in cookies if needed
@@ -63,8 +61,7 @@ const LoginPage = () => {
         if (userData) {
           Cookies.set("user_data", JSON.stringify(userData), {
             expires: rememberMe ? 7 : undefined,
-            secure: true,
-            sameSite: "Lax",
+          
           });
         }
 
