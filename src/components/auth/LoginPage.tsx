@@ -162,9 +162,9 @@ const LoginPage = () => {
                     Remember me
                   </Label>
                 </div>
-                <button type="button" className="text-sm text-blue-600">
+                {/* <button type="button" className="text-sm text-blue-600">
                   Forgot password?
-                </button>
+                </button> */}
               </div>
 
               <Button type="submit" className="w-full">
