@@ -319,8 +319,8 @@ useEffect(() => {
           </DropdownMenu>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Export</Button>
-          <Button variant="outline">Bulk Actions</Button>
+          {/* <Button variant="outline">Export</Button> */}
+          {/* <Button variant="outline">Bulk Actions</Button> */}
         </div>
       </div>
 

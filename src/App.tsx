@@ -40,6 +40,7 @@ import React from "react";
 import Cookies from "js-cookie";
 import { SubSubCategoryManagement } from "./components/sub-subcategoies/SubSubCategoryManagement";
 import UpdateProductManagement from "./components/pages/UpdateProductManagement";
+import VendorRegisterPage from "./components/auth/Register";
 
 
 const queryClient = new QueryClient();
@@ -183,6 +184,7 @@ const App = () => (
       <BrowserRouter basename="/admin">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+           <Route path="/register" element={<VendorRegisterPage/>} />
           
           {/* Admin Routes */}
           <Route element={<AuthRoute />}>
@@ -202,6 +204,7 @@ const App = () => (
                   <Route key={path} path={path} element={element} />
                 ))}
                 <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
+               
               </Route>
             </Route>
           </Route>

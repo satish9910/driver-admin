@@ -124,7 +124,7 @@ export function RecentOrders() {
   };
 
   const formatAmount = (amount: string) => {
-    return `$${(parseInt(amount) / 100).toFixed(2)}`;
+    return `₹${(parseInt(amount) / 100).toFixed(2)}`;
   };
 
   const formatShortDate = (dateString: string) => {
@@ -305,7 +305,7 @@ export function RecentOrders() {
           <CardTitle>Sales Performance (Last 5 Orders)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div className="h-[300px] ">
             <Line data={chartData} options={chartOptions} />
           </div>
           <div className="mt-4 text-sm text-gray-500">

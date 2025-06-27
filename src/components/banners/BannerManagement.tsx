@@ -473,7 +473,7 @@ export function BannerManagement() {
           </DropdownMenu>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Analytics</Button>
+          {/* <Button variant="outline">Analytics</Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>

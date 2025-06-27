@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   LogOut,
+  User,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Cookies from "js-cookie";
@@ -81,11 +82,11 @@ export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProp
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg"></div>
-              <span className="font-semibold text-gray-900">
-                {isAdmin ? "Shopinger Admin" : "My Vendor Portal"}
-              </span>
+            <div className="flex flex-col items-center space-x-2">
+               <img src="logo.png" alt="Shopinger Logo" className="mx-auto h-10 w-auto mb-2" />
+              {/* <span className="font-semibold text-gray-900">
+                {isAdmin ? " Admin" : " Vendor"}
+              </span> */}
             </div>
           )}
           <Button
@@ -140,7 +141,9 @@ export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProp
       <div className="p-4 border-t border-gray-200">
         {!isCollapsed ? (
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gray-300 rounded-full"></div>
+            <div className="w-8 h-8 bg-gray-300 rounded-full ">
+              <User className="h-8 w-8 text-gray-500" />
+            </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
                 {isAdmin ? "Admin User" : "Vendor Account"}

@@ -159,9 +159,9 @@ export function StaticPagesManagement() {
           </DropdownMenu>
         </div>
         <div className="flex gap-2 w-full md:w-auto">
-          <Button variant="outline" className="w-full md:w-auto">
+          {/* <Button variant="outline" className="w-full md:w-auto">
             Analytics
-          </Button>
+          </Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="w-full md:w-auto">

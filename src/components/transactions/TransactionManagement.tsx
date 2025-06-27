@@ -201,7 +201,7 @@ export function TransactionManagement() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex space-x-2">
+        {/* <div className="flex space-x-2">
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
@@ -210,7 +210,7 @@ export function TransactionManagement() {
             <Download className="h-4 w-4 mr-2" />
             Export PDF
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Transactions Table */}

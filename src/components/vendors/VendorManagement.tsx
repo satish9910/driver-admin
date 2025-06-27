@@ -170,7 +170,7 @@ export function VendorManagement() {
           </Button>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Export</Button>
+          {/* <Button variant="outline">Export</Button> */}
           <Button onClick={() => setIsAddVendorOpen(true)}>Add Vendor</Button>
         </div>
       </div>

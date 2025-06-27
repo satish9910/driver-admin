@@ -303,7 +303,7 @@ export function CategoryManagement() {
           </div>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Export</Button>
+          {/* <Button variant="outline">Export</Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>

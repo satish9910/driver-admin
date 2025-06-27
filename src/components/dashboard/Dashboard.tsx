@@ -14,6 +14,7 @@ import {
   UserCheck,
   List,
   Layers,
+  IndianRupee,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -175,7 +176,7 @@ export function Dashboard() {
       )}`,
       change: `${stats.last5MonthSales.length} months of sales data`,
       changeType: "positive" as const,
-      icon: DollarSign,
+      icon: IndianRupee,
       iconColor: "text-green-600",
     },
     {
@@ -189,7 +190,7 @@ export function Dashboard() {
     {
       title: "Total Products",
       value: stats.products.toString(),
-      change: `${stats.categories} categories, ${stats.subCategories} sub-categories`,
+      change: `₹{stats.categories} categories, ${stats.subCategories} sub-categories`,
       changeType: "neutral" as const,
       icon: Package,
       iconColor: "text-purple-600",
@@ -327,7 +328,7 @@ export function Dashboard() {
       </div>
 
       {/* Performance Chart */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <TrendingUp className="h-5 w-5" />
@@ -363,7 +364,7 @@ export function Dashboard() {
             </div>
           )}
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Additional Stats */}
     </div>

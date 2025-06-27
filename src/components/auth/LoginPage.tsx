@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
 // Replace these with your actual UI components or use plain HTML
@@ -80,8 +80,7 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl mx-auto mb-4"></div>
-          <h1 className="text-2xl font-bold text-gray-900">Shopinger</h1>
+       <img src="logo.png" alt="Shopinger Logo" className="mx-auto h-12 w-auto mb-2" />
           <p className="text-gray-600">Sign in to your account</p>
         </div>
 
@@ -176,9 +175,11 @@ const LoginPage = () => {
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{" "}
+                <Link to="/register" className="text-blue-600">
                 <Button variant="link" className="p-0">
-                  Contact Administrator
+                  Vendor Register
                 </Button>
+                </Link>
               </p>
             </div>
           </CardContent>

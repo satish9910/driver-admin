@@ -289,8 +289,8 @@ export function ProductManagement() {
           </DropdownMenu>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">Bulk Upload</Button>
-          <Button variant="outline">Export</Button>
+          {/* <Button variant="outline">Bulk Upload</Button> */}
+          {/* <Button variant="outline">Export</Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               {/* <Button>
