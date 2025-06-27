@@ -83,9 +83,9 @@ export function ProductManagement() {
 
   const handleDetailClick = (productId: number) => {
     if (isAdmin) {
-      navigate(`/admin/productdetails/${productId}`);
+      navigate(`/productdetails/${productId}`);
     } else if (isVendor) {
-      navigate(`/vendor/productdetails/${productId}`);
+      navigate(`/productdetails/${productId}`);
     }
   }
 
@@ -406,8 +406,8 @@ export function ProductManagement() {
                           onClick={() =>
                             navigate(
                               isAdmin
-                                ? `/admin/product-update/${product.id}`
-                                : `/vendor/product-update/${product.id}`
+                                ? `/product-update/${product.id}`
+                                : `/product-update/${product.id}`
                             )
                           }
                         >

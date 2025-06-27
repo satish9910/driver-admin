@@ -87,39 +87,39 @@ const vendorSectionTitles = {
 };
 
 const adminSectionRoutes = [
-  { path: "/admin/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/admin/customers", key: "customers", element: <CustomerManagement /> },
-  { path: "/admin/vendors", key: "vendors", element: <VendorManagement /> },
-  { path: "/admin/products", key: "products", element: <ProductManagement /> },
-  { path: "/admin/addproducts", key: "addproducts", element: <AddProductManagement /> },
-  { path: "/admin/orders", key: "orders", element: <OrderManagement /> },
-  { path: "/admin/categories", key: "categories", element: <CategoryManagement /> },
-  { path: "/admin/subcategories", key: "subcategories", element: <SubCategoryManagement /> },
-  { path: "/admin/sub-sub-categories", key: "subsubcategories", element: <SubSubCategoryManagement/> },
-  { path: "/admin/banners", key: "banners", element: <BannerManagement /> },
-  { path: "/admin/transactions", key: "transactions", element: <TransactionManagement /> },
-  { path: "/admin/pages", key: "pages", element: <StaticPagesManagement /> },
-  { path: "/admin/settings", key: "settings", element: <SettingsManagement /> },
-  { path: "/admin/userprofile/:userId", key: "userprofile", element: <UserProfile /> },
-  { path: "/admin/vendorprofile/:vendorId", key: "vendorprofile", element: <VendorProfile /> },
-  { path: "/admin/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
-  { path: "/admin/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
-  { path: "/admin/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
-  { path: "/admin/pendingvendors", key: "pendingvendors", element: <PendingVendors /> },
-  { path: "/admin/aboutus", key: "aboutus", element: <AboutUsPage /> },
-  { path: "/admin/privacypolicy", key: "privacypolicy", element: <PrivacyPolicyPage /> },
-  { path: "/admin/refundpolicy", key: "refundpolicy", element: <RefundPolicy /> },
-  { path: "/admin/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
+  { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
+  { path: "/customers", key: "customers", element: <CustomerManagement /> },
+  { path: "/vendors", key: "vendors", element: <VendorManagement /> },
+  { path: "/products", key: "products", element: <ProductManagement /> },
+  { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
+  { path: "/orders", key: "orders", element: <OrderManagement /> },
+  { path: "/categories", key: "categories", element: <CategoryManagement /> },
+  { path: "/subcategories", key: "subcategories", element: <SubCategoryManagement /> },
+  { path: "/sub-sub-categories", key: "subsubcategories", element: <SubSubCategoryManagement/> },
+  { path: "/banners", key: "banners", element: <BannerManagement /> },
+  { path: "/transactions", key: "transactions", element: <TransactionManagement /> },
+  { path: "/pages", key: "pages", element: <StaticPagesManagement /> },
+  { path: "/settings", key: "settings", element: <SettingsManagement /> },
+  { path: "/userprofile/:userId", key: "userprofile", element: <UserProfile /> },
+  { path: "/vendorprofile/:vendorId", key: "vendorprofile", element: <VendorProfile /> },
+  { path: "/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
+  { path: "/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
+  { path: "/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
+  { path: "/pendingvendors", key: "pendingvendors", element: <PendingVendors /> },
+  { path: "/aboutus", key: "aboutus", element: <AboutUsPage /> },
+  { path: "/privacypolicy", key: "privacypolicy", element: <PrivacyPolicyPage /> },
+  { path: "/refundpolicy", key: "refundpolicy", element: <RefundPolicy /> },
+  { path: "/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
 ];
 
 const vendorSectionRoutes = [
-  { path: "/vendor/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/vendor/products", key: "products", element: <ProductManagement /> },
-  { path: "/vendor/addproducts", key: "addproducts", element: <AddProductManagement /> },
-  { path: "/vendor/orders", key: "orders", element: <OrderManagement /> },
-  { path: "/vendor/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
-   { path: "/vendor/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
-  { path: "/vendor/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
+  { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
+  { path: "/products", key: "products", element: <ProductManagement /> },
+  { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
+  { path: "/orders", key: "orders", element: <OrderManagement /> },
+  { path: "/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
+   { path: "/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
+  { path: "/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
 ];
 
 // Layout components
@@ -133,7 +133,7 @@ function AdminLayout() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
         activeSection={activeSection}
-        onSectionChange={(section) => navigate(`/admin/${section}`)}
+        onSectionChange={(section) => navigate(`/${section}`)}
         isAdmin={true}
       />
       <div className="flex-1 flex flex-col">
@@ -159,7 +159,7 @@ function VendorLayout() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar
         activeSection={activeSection}
-        onSectionChange={(section) => navigate(`/vendor/${section}`)}
+        onSectionChange={(section) => navigate(`/${section}`)}
         isAdmin={false}
       />
       <div className="flex-1 flex flex-col">

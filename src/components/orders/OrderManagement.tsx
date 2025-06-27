@@ -109,10 +109,10 @@ const token = isAdmin ? Cookies.get("admin_token") : Cookies.get("vendor_token")
   const handleOrderDetails = (orderId: number) => {
     if (isAdmin) {
    
-      navigate(`/admin/orderdetails/${orderId}`);
+      navigate(`/orderdetails/${orderId}`);
     } else if (isVendor) {
      
-      navigate(`/vendor/orderdetails/${orderId}`);
+      navigate(`/orderdetails/${orderId}`);
     }
   };
 
