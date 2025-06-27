@@ -63,7 +63,7 @@ export function Header({ title, subtitle }: HeaderProps) {
     // Check for token in cookies when component mounts
     const token = isAdmin ? Cookies.get("admin_token"): Cookies.get("vendor_token");
     setIsLoggedIn(!!token);
-  }, []);
+  }, [ ]);
 
   return (
     <div className="fixed top-0 left-[250px] right-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between z-50">

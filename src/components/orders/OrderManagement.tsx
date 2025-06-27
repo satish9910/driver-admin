@@ -231,7 +231,7 @@ useEffect(() => {
         />
         <StatsCard
           title="Revenue"
-          value={`$${totalRevenue.toFixed(2)}`}
+          value={`₹${totalRevenue.toFixed(2)}`}
           change="+8% from last month"
           changeType="positive"
           icon={DollarSign}
