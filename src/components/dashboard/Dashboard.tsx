@@ -190,7 +190,7 @@ export function Dashboard() {
     {
       title: "Total Products",
       value: stats.products.toString(),
-      change: `₹{stats.categories} categories, ${stats.subCategories} sub-categories`,
+      // change: `₹${stats.categories} categories, ${stats.subCategories} sub-categories`,
       changeType: "neutral" as const,
       icon: Package,
       iconColor: "text-purple-600",
