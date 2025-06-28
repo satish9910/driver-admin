@@ -327,7 +327,7 @@ export function VendorManagement() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() =>
-                              (window.location.href = `/vendorprofile/${vendor.id}`)
+                              (window.location.href = `/admin/vendorprofile/${vendor.id}`)
                             }
                           >
                             <Eye className="mr-2 h-4 w-4" />

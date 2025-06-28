@@ -159,7 +159,7 @@ const AddProductManagement = () => {
 
   const removeAttribute = (variantIndex, attrIndex) => {
     const updatedVariants = [...product.variants];
-    if (updatedVariants[variantIndex].attributes.length <= 1) return;
+    if (updatedVariants[variantIndex].attributes.length <= 0) return;
     updatedVariants[variantIndex].attributes = updatedVariants[
       variantIndex
     ].attributes.filter((_, i) => i !== attrIndex);
@@ -584,7 +584,7 @@ const AddProductManagement = () => {
                               key={attrIndex}
                               className="grid grid-cols-1 gap-4 sm:grid-cols-2 relative"
                             >
-                              {variant.attributes.length > 1 && (
+                              {variant.attributes.length > 0 && (
                                 <button
                                   type="button"
                                   onClick={() =>
