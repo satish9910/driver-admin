@@ -62,10 +62,10 @@ export function SettingsManagement() {
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="payment">Payment</TabsTrigger>
-          <TabsTrigger value="delivery">Delivery</TabsTrigger>
-          <TabsTrigger value="email">Email/SMS</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          {/* <TabsTrigger value="payment">Payment</TabsTrigger> */}
+          {/* <TabsTrigger value="delivery">Delivery</TabsTrigger> */}
+          {/* <TabsTrigger value="email">Email/SMS</TabsTrigger> */}
+          {/* <TabsTrigger value="appearance">Appearance</TabsTrigger> */}
         </TabsList>
 
         <TabsContent value="general" className="space-y-6">

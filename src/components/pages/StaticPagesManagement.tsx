@@ -164,10 +164,10 @@ export function StaticPagesManagement() {
           </Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="w-full md:w-auto">
+              {/* <Button className="w-full md:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Page
-              </Button>
+              </Button> */}
             </DialogTrigger>
             <DialogContent className="max-w-lg w-full">
               <DialogHeader>
@@ -212,10 +212,10 @@ export function StaticPagesManagement() {
                   <TableHead>#</TableHead>
                   <TableHead>Title</TableHead>
                   <TableHead>Slug</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Views</TableHead>
-                  <TableHead>Last Modified</TableHead>
-                  <TableHead>Author</TableHead>
+                  {/* <TableHead>Status</TableHead> */}
+                  {/* <TableHead>Views</TableHead> */}
+                  {/* <TableHead>Last Modified</TableHead> */}
+                  {/* <TableHead>Author</TableHead> */}
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -243,14 +243,14 @@ export function StaticPagesManagement() {
                         /{page.slug}
                       </a>
                     </TableCell>
-                    <TableCell>
+                    {/* <TableCell>
                       <Badge className={getStatusColor(page.status)}>
                         {page.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell>{page.views}</TableCell>
-                    <TableCell>{page.lastModified}</TableCell>
-                    <TableCell>{page.author}</TableCell>
+                    </TableCell> */}
+                    {/* <TableCell>{page.views}</TableCell> */}
+                    {/* <TableCell>{page.lastModified}</TableCell> */}
+                    {/* <TableCell>{page.author}</TableCell> */}
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
