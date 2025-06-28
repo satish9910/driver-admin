@@ -246,9 +246,9 @@ const UpdateProductManagement = () => {
     setImages([...e.target.files]);
   };
 
-  const removeExistingImage = (index) => {
-    setExistingImages((prev) => prev.filter((_, i) => i !== index));
-  };
+  // const removeExistingImage = (index) => {
+  //   setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  // };
 
   const triggerFileInput = () => {
     fileInputRef.current.click();
@@ -270,7 +270,11 @@ const UpdateProductManagement = () => {
         formData.append("vendorId", product.vendorId);
       }
       formData.append("variants", JSON.stringify(product.variants));
-      // formData.append("existingImages", JSON.stringify(existingImages));
+     
+      // existingImages.forEach((url) => {
+      //   formData.append("images_0", url);
+      // });
+
 
       images.forEach((image, index) => {
         formData.append(`images_0`, image);
@@ -290,9 +294,9 @@ const UpdateProductManagement = () => {
       );
 
       setSuccess(true);
-      setTimeout(() => {
-        navigate(isAdmin ? "/admin/products" : "/vendor/products");
-      }, 1500);
+      // setTimeout(() => {
+      //   navigate(isAdmin ? "/admin/products" : "/vendor/products");
+      // }, 1500);
     } catch (error) {
       console.error("Error updating product:", error);
     } finally {
@@ -771,7 +775,7 @@ const UpdateProductManagement = () => {
                           alt={`Preview ${index}`}
                           className="h-24 w-full object-cover rounded"
                         />
-                        <button
+                        {/* <button
                           type="button"
                           onClick={() => removeExistingImage(index)}
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
@@ -790,7 +794,7 @@ const UpdateProductManagement = () => {
                               d="M6 18L18 6M6 6l12 12"
                             />
                           </svg>
-                        </button>
+                        </button> */}
                       </div>
                     ))}
                   </div>

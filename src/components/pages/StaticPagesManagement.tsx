@@ -224,24 +224,14 @@ export function StaticPagesManagement() {
                   <TableRow key={page.id} className="hover:bg-gray-50">
                     <TableCell>{filteredPages.indexOf(page) + 1}</TableCell>
                     <TableCell className="font-medium">
-                      <a
-                        href={page.path}
-                        className="text-blue-600 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                   
                         {page.title}
-                      </a>
+                     
                     </TableCell>
                     <TableCell className="text-gray-500">
-                      <a
-                        href={page.path}
-                        className="hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
+                    
                         /{page.slug}
-                      </a>
+                    
                     </TableCell>
                     {/* <TableCell>
                       <Badge className={getStatusColor(page.status)}>
@@ -265,10 +255,10 @@ export function StaticPagesManagement() {
                             <Edit className="mr-2 h-4 w-4" />
                             ADD
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          {/* <DropdownMenuItem>
                             <Eye className="mr-2 h-4 w-4" />
                             preview
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
                           <DropdownMenuItem className="text-red-600">
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete
