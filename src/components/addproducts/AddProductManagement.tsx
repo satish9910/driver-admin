@@ -189,8 +189,8 @@ const AddProductManagement = () => {
       formData.append("vendorId", isAdmin ? product.vendorId : vendorId);
       formData.append("variants", JSON.stringify(product.variants));
 
-      images.forEach((image, index) => {
-        formData.append(`images_${index}`, image);
+      images.forEach((image) => {
+        formData.append(`images_0`, image);
       });
 
       const token = isVendor
