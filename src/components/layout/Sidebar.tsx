@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
-import logo from "../../../public/images/logo.png"
+import logo from "../../images/logo.png";
 import {
   BarChart3,
   Users,
