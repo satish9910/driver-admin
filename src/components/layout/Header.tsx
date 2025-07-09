@@ -14,6 +14,7 @@ import { Bell, Search, Settings, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie"; // Make sure to install js-cookie if not already
+import { cn } from "@/lib/utils";
 
 
 
@@ -24,13 +25,24 @@ interface HeaderProps {
 
 export function Header({ title, subtitle }: HeaderProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+   const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const role = Cookies.get("user_role");
    
   const isAdmin = role === "admin";
  
 
   const navigate = useNavigate();
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  // const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = () => {
     // Remove all auth-related cookies
@@ -45,18 +57,18 @@ export function Header({ title, subtitle }: HeaderProps) {
     navigate("/login");
   };
 
-  const handleLogoutClick = () => {
-    setShowLogoutConfirm(true);
-  };
+  // const handleLogoutClick = () => {
+  //   setShowLogoutConfirm(true);
+  // };
 
-  const handleConfirmLogout = () => {
-    setShowLogoutConfirm(false);
-    handleLogout();
-  };
+  // const handleConfirmLogout = () => {
+  //   setShowLogoutConfirm(false);
+  //   handleLogout();
+  // };
 
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
-  };
+  // const handleCancelLogout = () => {
+  //   setShowLogoutConfirm(false);
+  // };
 
 
   useEffect(() => {
@@ -66,11 +78,31 @@ export function Header({ title, subtitle }: HeaderProps) {
   }, [ ]);
 
   return (
-    <div className="fixed top-0 left-[250px] right-0 h-16 bg-white border-b border-gray-200 px-6 flex items-center justify-between z-50">
-      {" "}
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-        {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
+ <div className={cn(
+      "bg-white border-b border-gray-200 px-4 md:px-6 flex items-center justify-between z-40",
+      isMobile ? "fixed top-0 left-0 right-0 h-16" : "fixed top-0 left-64 right-0 h-16"
+    )}>
+      <div
+        className={cn(
+          "flex flex-col space-x-4",
+          isMobile ? "items-center justify-center flex-1 text-center" : "items-start justify-center"
+        )}
+        style={isMobile ? { width: "100%" } : {}}
+      >
+        <h1 className={cn(
+          "font-semibold text-gray-900",
+          isMobile ? "text-sm" : "text-xl"
+        )}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p className={cn(
+        "text-gray-600",
+        isMobile ? "text-xs" : "text-sm"
+          )}>
+        {subtitle}
+          </p>
+        )}
       </div>
       <div className="flex items-center space-x-4">
         {/* Search */}
@@ -80,7 +112,7 @@ export function Header({ title, subtitle }: HeaderProps) {
         </div> */}
 
         {/* Notifications - Only show if logged in */}
-        {isLoggedIn && (
+        {isLoggedIn && !isMobile && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               {/* <Button variant="ghost" size="icon" className="relative">
@@ -126,10 +158,13 @@ export function Header({ title, subtitle }: HeaderProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {/* <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                Settings
-              </DropdownMenuItem> */}
+              <Link to="/profile" >
+              <DropdownMenuItem>
+               
+                Profile
+              </DropdownMenuItem>
+              </Link>
+
               <DropdownMenuItem
                 onClick={handleLogout}
               >

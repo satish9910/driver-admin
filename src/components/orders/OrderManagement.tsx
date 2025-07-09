@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
-
 import {
   Table,
   TableBody,
@@ -14,13 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,7 +27,7 @@ import {
   Package,
   Truck,
   CheckCircle,
-  Cookie,
+  Download,
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { TrendingUp, ShoppingCart, Users, DollarSign } from "lucide-react";
@@ -87,73 +79,82 @@ interface Order {
   }[];
 }
 
+interface ShipRocketResponse {
+  success: boolean;
+  awb: string;
+  shipment_id: number;
+  order_id: number;
+  courier_name: string;
+  rate: number;
+  label_url: string;
+  pickup: {
+    status: string;
+    scheduled_date: null | string;
+    token_number: null | string;
+  };
+}
+
 export function OrderManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-const role = Cookies.get("user_role");
-const isAdmin = role === "admin";
-const isVendor = role === "vendor";
-const navigate = useNavigate();
+  const [shipmentLoading, setShipmentLoading] = useState<Record<number, boolean>>({});
+  const role = Cookies.get("user_role");
+  const isAdmin = role === "admin";
+  const isVendor = role === "vendor";
+  const navigate = useNavigate();
 
-
-
-// Get the appropriate token based on role
-const token = isAdmin ? Cookies.get("admin_token") : Cookies.get("vendor_token");
+  // Get the appropriate token based on role
+  const token = isAdmin ? Cookies.get("admin_token") : Cookies.get("vendor_token");
 
   const [error, setError] = useState<string | null>(null);
 
-  // Function to handle order details
   const handleOrderDetails = (orderId: number) => {
     if (isAdmin) {
-   
       navigate(`/orderdetails/${orderId}`);
     } else if (isVendor) {
-     
       navigate(`/vendor/orderdetails/${orderId}`);
     }
   };
 
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true);
+        
+        let apiUrl = "";
+        if (isAdmin) {
+          apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`;
+        } else if (isVendor) {
+          apiUrl = `${import.meta.env.VITE_BASE_UR}vendor/get-all-orders`;
+        } else {
+          throw new Error("Unauthorized access - Invalid user role");
+        }
 
+        const response = await fetch(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-useEffect(() => {
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      
-      let apiUrl = "";
-      if (isAdmin) {
-        apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`;
-      } else if (isVendor) {
-        apiUrl = `${import.meta.env.VITE_BASE_UR}vendor/get-all-orders`;
-      } else {
-        throw new Error("Unauthorized access - Invalid user role");
+        if (!response.ok) {
+          throw new Error(`Failed to fetch orders: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        setOrders(data.data || data); // Handle different response structures
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const response = await fetch(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch orders: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      setOrders(data.data || data); // Handle different response structures
-    } catch (error) {
-      console.error("Error fetching orders:", error);
-      setError(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchOrders();
-}, []); // Empty dependency array means this runs once on mount
+    fetchOrders();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -182,6 +183,48 @@ useEffect(() => {
         return "PayPal";
       default:
         return method;
+    }
+  };
+
+  const createShipRocketOrder = async (orderId: number) => {
+    try {
+      setShipmentLoading(prev => ({ ...prev, [orderId]: true }));
+      
+      const response = await fetch(
+        `http://103.189.173.127:3000/api/vendor/one-click-create-shiprocket-order/${orderId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to create ShipRocket order: ${response.statusText}`);
+      }
+
+      const data: ShipRocketResponse = await response.json();
+      
+      if (data.success && data.label_url) {
+        // Open the label URL in a new tab to download
+        window.open(data.label_url, "_blank");
+        
+        // Optionally update the order status in the UI
+        setOrders(prevOrders =>
+          prevOrders.map(order =>
+            order.id === orderId
+              ? { ...order, status: "SHIPPED" } // Update status to shipped
+              : order
+          )
+        );
+      }
+    } catch (error) {
+      console.error("Error creating ShipRocket order:", error);
+      alert(`Failed to create ShipRocket order: ${error.message}`);
+    } finally {
+      setShipmentLoading(prev => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -218,7 +261,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="space-y-6 ml-64 mt-14">
+    <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatsCard
@@ -318,10 +361,6 @@ useEffect(() => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex space-x-2">
-          {/* <Button variant="outline">Export</Button> */}
-          {/* <Button variant="outline">Bulk Actions</Button> */}
-        </div>
       </div>
 
       {/* Orders Table */}
@@ -375,6 +414,23 @@ useEffect(() => {
                     <TableCell>{orderDate}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
+                      
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => createShipRocketOrder(order.id)}
+                            disabled={shipmentLoading[order.id]}
+                          >
+                            {shipmentLoading[order.id] ? (
+                              "Processing..."
+                            ) : (
+                              <>
+                                <Truck className="h-4 w-4 mr-2" />
+                                Ship Now
+                              </>
+                            )}
+                          </Button>
+                     
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon">
@@ -383,17 +439,23 @@ useEffect(() => {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() =>
-                               handleOrderDetails(order.id) // Function to handle order details
-                              }
+                              onClick={() => handleOrderDetails(order.id)}
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               Order Details
                             </DropdownMenuItem>
-                            <DropdownMenuItem>Track Order</DropdownMenuItem>
-                            <DropdownMenuItem>
-                              Contact Customer
-                            </DropdownMenuItem>
+                          
+                              {/* <DropdownMenuItem
+                                onClick={() => {
+                                  // This would be replaced with actual label URL if available
+                                  const labelUrl = `https://example.com/labels/${order.id}.pdf`;
+                                  window.open(labelUrl, "_blank");
+                                }}
+                              >
+                                <Download className="mr-2 h-4 w-4" />
+                                Download Label
+                              </DropdownMenuItem> */}
+                          
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -408,3 +470,4 @@ useEffect(() => {
     </div>
   );
 }
+

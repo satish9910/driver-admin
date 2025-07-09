@@ -128,11 +128,11 @@ const RefundPolicy = () => {
   };
 
   return (
-    <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
+    <div className="container px-4 py-8 mx-auto  sm:px-6 lg:px-8">
       <ToastContainer position="top-right" autoClose={5000} />
       <h1 className="text-2xl font-bold mb-6">Refund Policy Management</h1>
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
         {isLoading && !existingData ? (
           <p>Loading...</p>
         ) : existingData ? (
@@ -158,9 +158,9 @@ const RefundPolicy = () => {
             )}
             <button
               onClick={openEditModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
             >
-              Add Refund Policy
+              {existingData ? "Edit Refund Policy" : "Add Refund Policy"}
             </button>
           </div>
         ) : (
@@ -168,7 +168,7 @@ const RefundPolicy = () => {
             <p className="mb-4">No Refund Policy content found.</p>
             <button
               onClick={openEditModal}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200"
             >
               Create Refund Policy
             </button>
@@ -181,10 +181,10 @@ const RefundPolicy = () => {
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
         contentLabel="Add Refund Policy"
-        className="modal-content bg-white rounded-lg shadow-xl p-6 w-[60%] mx-auto my-12"
-        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-20"
+        className="modal-content bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full sm:w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 mx-auto my-12 max-h-[90vh] overflow-y-auto"
+        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
       >
-        <h2 className="text-2xl font-bold mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold mb-6">
           {existingData ? "Edit Refund Policy" : "Create Refund Policy"}
         </h2>
         <form onSubmit={handleSubmit}>
@@ -260,18 +260,18 @@ const RefundPolicy = () => {
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-3">
             <button
               type="button"
               onClick={closeModal}
-              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors duration-200"
             >
               {isLoading
                 ? "Saving..."

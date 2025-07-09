@@ -128,7 +128,7 @@ const TermsOfServicePage = () => {
   };
 
   return (
-    <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
+    <div className="container max-w-6xl px-4 py-8">
       <ToastContainer position="top-right" autoClose={5000} />
       <h1 className="text-2xl font-bold mb-6">Terms & Conditions Management</h1>
 

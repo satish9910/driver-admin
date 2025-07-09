@@ -128,7 +128,7 @@ const AboutUsPage = () => {
   };
 
   return (
-    <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
+    <div className="container px-4 py-8 mx-auto md:max-w-6xl">
       <ToastContainer position="top-right" autoClose={5000} />
       <h1 className="text-2xl font-bold mb-6">About Us Management</h1>
 
@@ -160,7 +160,7 @@ const AboutUsPage = () => {
               onClick={openEditModal}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Add About Us
+              {existingData ? "Edit About Us" : "Add About Us"}
             </button>
           </div>
         ) : (
@@ -181,8 +181,15 @@ const AboutUsPage = () => {
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
         contentLabel="Add About Us"
-        className="bg-white rounded-lg shadow-xl p-6 w-[60%] my-12 mx-auto "
-        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center  mt-20"
+        className="bg-white rounded-lg shadow-xl p-6 w-full md:w-3/4 lg:w-2/3 mx-auto my-8 overflow-y-auto"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+        style={{
+          content: {
+            maxHeight: "90vh",
+            margin: "auto",
+            inset: "auto",
+          },
+        }}
       >
         <h2 className="text-2xl font-bold mb-6">
           {existingData ? "Edit About Us" : "Create About Us"}

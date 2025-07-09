@@ -36,11 +36,13 @@ import AboutUsPage from "./components/pages/aboutus";
 import PrivacyPolicyPage from "./components/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./components/pages/TermsOfServicePage";
 import RefundPolicy from "./components/pages/refundpolicy";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { SubSubCategoryManagement } from "./components/sub-subcategoies/SubSubCategoryManagement";
 import UpdateProductManagement from "./components/pages/UpdateProductManagement";
 import VendorRegisterPage from "./components/auth/Register";
+import VendorProfilePage from "./pages/Profile";
+import { cn } from "./lib/utils";
 
 
 const queryClient = new QueryClient();
@@ -65,6 +67,7 @@ const VendorRoute = () => {
 
 // Section titles and routes
 const adminSectionTitles = {
+
   dashboard: { title: "Admin Dashboard", subtitle: "Overview of your eCommerce platform" },
   customers: { title: "Customer Management", subtitle: "Manage customer accounts and data" },
   vendors: { title: "Vendor Management", subtitle: "Oversee vendor applications and stores" },
@@ -121,28 +124,45 @@ const vendorSectionRoutes = [
   { path: "/vendor/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
    { path: "/vendor/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
   { path: "/vendor/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
+  { path: "/profile", key: "profile", element: <VendorProfilePage /> },
 ];
 
 // Layout components
+// AdminLayout component
 function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const activeSection = adminSectionRoutes.find((r) => r.path === location.pathname)?.key || "dashboard";
   const currentSection = adminSectionTitles[activeSection] || adminSectionTitles.dashboard;
   
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar
         activeSection={activeSection}
         onSectionChange={(section) => navigate(`/${section}`)}
         isAdmin={true}
       />
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "flex-1 flex flex-col transition-all duration-300",
+        isMobile ? "ml-0" : "ml-16 md:ml-64"
+      )}>
         <Header
           title={currentSection.title}
           subtitle={currentSection.subtitle}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 mt-16">
           <Outlet />
         </main>
       </div>
@@ -150,32 +170,47 @@ function AdminLayout() {
   );
 }
 
+// VendorLayout component (similar changes)
 function VendorLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const activeSection = vendorSectionRoutes.find((r) => r.path === location.pathname)?.key || "dashboard";
   const currentSection = vendorSectionTitles[activeSection] || vendorSectionTitles.dashboard;
   
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar
         activeSection={activeSection}
         onSectionChange={(section) => navigate(`/vendor/${section}`)}
         isAdmin={false}
       />
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "flex-1 flex flex-col transition-all duration-300",
+        isMobile ? "ml-0" : "ml-16 md:ml-64"
+      )}>
         <Header
           title={currentSection.title}
           subtitle={currentSection.subtitle}
         />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 md:p-6 mt-16">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>

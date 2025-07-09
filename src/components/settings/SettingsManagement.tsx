@@ -58,7 +58,7 @@ export function SettingsManagement() {
   };
 
   return (
-    <div className="space-y-6 ml-64 mt-14">
+    <div className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="general">General</TabsTrigger>

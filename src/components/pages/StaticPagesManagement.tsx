@@ -122,7 +122,7 @@ export function StaticPagesManagement() {
   };
 
   return (
-    <div className="space-y-6 px-2 mx-auto ml-64 mt-14">
+    <div className="space-y-6 px-2 mx-auto">
       {/* Header with Search and Filters */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 w-full">

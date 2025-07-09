@@ -149,7 +149,7 @@ const OrderDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 ml-64 mt-14">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">

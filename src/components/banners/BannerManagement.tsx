@@ -438,7 +438,7 @@ export function BannerManagement() {
   }
 
   return (
-    <div className="space-y-6 mt-14 ml-72">
+    <div className="space-y-6">
       {/* Header with Search and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 ">
         <div className="flex items-center space-x-4">

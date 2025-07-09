@@ -110,7 +110,7 @@ const VendorProfile = () => {
     userData.Address?.find((addr) => addr.isDefault) || userData.Address?.[0];
 
   return (
-    <div className="flex h-screen ml-56 mt-10">
+    <div className="flex h-screen">
       {/* <Sidebar
         activeSection="userProfile"
         onSectionChange={(section) => console.log(section)}

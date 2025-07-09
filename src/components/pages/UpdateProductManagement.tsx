@@ -23,8 +23,8 @@ const UpdateProductManagement = () => {
         stock: "",
         sellingprice: "",
         attributes: [
-          { name: "color", value: "" },
-          { name: "size", value: "" },
+          { key: "color", value: "" },
+          { key: "size", value: "" },
         ],
       },
     ],
@@ -74,8 +74,8 @@ const UpdateProductManagement = () => {
           stock: variant.stock?.toString() || "",
           sellingprice: variant.sellingprice?.toString() || "",
           attributes: variant.attributes || [
-            { name: "color", value: "" },
-            { name: "size", value: "" },
+            { key: "color", value: "" },
+            { key: "size", value: "" },
           ],
               }))
             : [
@@ -85,19 +85,20 @@ const UpdateProductManagement = () => {
             stock: "",
             sellingprice: "",
             attributes: [
-              { name: "color", value: "" },
-              { name: "size", value: "" },
+              { key: "color", value: "" },
+              { key: "size", value: "" },
             ],
           },
               ],
         });
 
-        // Flatten all variant images into a single array for display
-        setExistingImages(
-          productData.variants
-            .flatMap((variant) => Array.isArray(variant.images) ? variant.images : [])
-        );
-        console.log("Existing images:", existingImages);
+     // Flatten all variant images into a single array for display
+        const allVariantImages = productData.variants
+          .flatMap((variant) => Array.isArray(variant.images) ? variant.images : [])
+          .filter((img, index, self) => self.findIndex(i => i === img) === index); // Remove duplicates
+        
+        setExistingImages(allVariantImages);
+        console.log("Existing images:", allVariantImages)
 
         // Fetch main categories with their subcategories and sub-subcategories
         const mainCategoriesResponse = await axios.get(
@@ -213,8 +214,8 @@ const UpdateProductManagement = () => {
           stock: "",
           sellingprice: "",
           attributes: [
-            { name: "color", value: "" },
-            { name: "size", value: "" },
+            { key: "color", value: "" },
+            { key: "size", value: "" },
           ],
         },
       ],
@@ -223,7 +224,7 @@ const UpdateProductManagement = () => {
 
   const addAttribute = (variantIndex) => {
     const updatedVariants = [...product.variants];
-    updatedVariants[variantIndex].attributes.push({ name: "", value: "" });
+    updatedVariants[variantIndex].attributes.push({ key: "", value: "" });
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -269,7 +270,17 @@ const UpdateProductManagement = () => {
       if (isAdmin) {
         formData.append("vendorId", product.vendorId);
       }
-      formData.append("variants", JSON.stringify(product.variants));
+       // Prepare variants data with existing images if no new images are uploaded
+
+      const variantsData = product.variants.map(variant => {
+        return {
+          ...variant,
+          // If no new images are uploaded, keep the existing images
+          images: images.length === 0 ? existingImages : []
+        };
+      });
+      
+      formData.append("variants", JSON.stringify(variantsData));
      
       // existingImages.forEach((url) => {
       //   formData.append("images_0", url);
@@ -313,7 +324,7 @@ const UpdateProductManagement = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 ml-72 mt-10">
+    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 ">
       <div className="max-w-5xl mx-auto">
         <div className="bg-white shadow-xl rounded-lg overflow-hidden">
           <div className="p-8 border-b border-gray-200">
@@ -676,8 +687,8 @@ const UpdateProductManagement = () => {
                                 <input
                                   type="text"
                                   id={`attr-name-${variantIndex}-${attrIndex}`}
-                                  name="name"
-                                  value={attribute.name}
+                                  name="key"
+                                  value={attribute.key}
                                   onChange={(e) =>
                                     handleAttributeChange(
                                       variantIndex,

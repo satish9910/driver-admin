@@ -20,9 +20,9 @@ const PrivacyPolicy = () => {
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const token = Cookies.get("admin_token");
 
-  // Fetch existing about us data
+  // Fetch existing privacy policy data
   useEffect(() => {
-    const fetchAboutUs = async () => {
+    const fetchPrivacyPolicy = async () => {
       try {
         setIsLoading(true);
         const response = await axios.get(
@@ -44,7 +44,7 @@ const PrivacyPolicy = () => {
       }
     };
 
-    fetchAboutUs();
+    fetchPrivacyPolicy();
   }, []);
 
   const handleInputChange = (e) => {
@@ -128,13 +128,15 @@ const PrivacyPolicy = () => {
   };
 
   return (
-    <div className="container max-w-6xl px-4 py-8 ml-56 mt-14">
+    <div className="container px-4 py-8 mx-auto  lg:max-w-6xl">
       <ToastContainer position="top-right" autoClose={5000} />
       <h1 className="text-2xl font-bold mb-6">Privacy Policy Management</h1>
 
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         {isLoading && !existingData ? (
-          <p>Loading...</p>
+          <div className="flex justify-center items-center py-8">
+            <p>Loading...</p>
+          </div>
         ) : existingData ? (
           <div>
             <div className="mb-6">
@@ -160,7 +162,7 @@ const PrivacyPolicy = () => {
               onClick={openEditModal}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-              Add Privacy Policy
+              {existingData ? "Edit Privacy Policy" : "Add Privacy Policy"}
             </button>
           </div>
         ) : (
@@ -180,15 +182,34 @@ const PrivacyPolicy = () => {
       <Modal
         isOpen={modalIsOpen}
         onRequestClose={closeModal}
-        contentLabel="Add Privacy Policy"
-        className="modal-content bg-white rounded-lg shadow-xl p-6 w-[60%] mx-auto my-12"
-        overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center mt-20"
+        contentLabel="Privacy Policy Modal"
+        className="modal-content bg-white rounded-lg shadow-xl p-6 w-full mx-4 md:mx-auto md:w-3/4 lg:w-2/3 my-8 max-h-[90vh] overflow-y-auto"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50 overflow-y-auto"
+        style={{
+          content: {
+            position: 'relative',
+            inset: 'auto',
+            margin: '0 auto',
+            maxHeight: 'calc(100vh - 64px)',
+          }
+        }}
       >
-        <h2 className="text-2xl font-bold mb-6">
-          {existingData ? "Edit Privacy Policy" : "Create Privacy Policy"}
-        </h2>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">
+            {existingData ? "Edit Privacy Policy" : "Create Privacy Policy"}
+          </h2>
+          <button 
+            onClick={closeModal}
+            className="text-gray-500 hover:text-gray-700 focus:outline-none"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
             <label
               htmlFor="title"
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -206,7 +227,7 @@ const PrivacyPolicy = () => {
             />
           </div>
 
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="description"
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -224,7 +245,7 @@ const PrivacyPolicy = () => {
             />
           </div>
 
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="image"
               className="block text-sm font-medium text-gray-700 mb-1"
@@ -242,7 +263,7 @@ const PrivacyPolicy = () => {
           </div>
 
           {aboutData.previewImage && (
-            <div className="mb-4">
+            <div>
               <p className="text-sm font-medium text-gray-700 mb-1">
                 Image Preview:
               </p>
@@ -260,7 +281,7 @@ const PrivacyPolicy = () => {
             </div>
           )}
 
-          <div className="flex justify-end space-x-3">
+          <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
               onClick={closeModal}
