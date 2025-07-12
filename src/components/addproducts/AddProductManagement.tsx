@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-
+import { toast } from "sonner"; 
 const AddProductManagement = () => {
   const [product, setProduct] = useState({
     name: "",
@@ -190,14 +190,14 @@ const AddProductManagement = () => {
       formData.append("variants", JSON.stringify(product.variants));
 
       images.forEach((image) => {
-      formData.append(`images_0`, image);
+        formData.append(`images_0`, image);
       });
 
       const token = isVendor
-    ? Cookies.get("vendor_token")
-      :  Cookies.get("admin_token");
+        ? Cookies.get("vendor_token")
+        : Cookies.get("admin_token");
       const apiUrl =
-         isVendor
+        isVendor
           ? `${import.meta.env.VITE_BASE_UR}vendor/add-product`
           : `${import.meta.env.VITE_BASE_UR}admin/add-product`;
 
@@ -206,13 +206,14 @@ const AddProductManagement = () => {
         formData,
         {
           headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
         }
       );
 
       setSuccess(true);
+      toast.success("Product added successfully!");
       // Reset form
       setProduct({
         name: "",
@@ -236,6 +237,15 @@ const AddProductManagement = () => {
       });
       setImages([]);
     } catch (error) {
+      let message = "Error adding product.";
+      if (axios.isAxiosError(error)) {
+        if (error.response?.data?.message) {
+          message = error.response.data.message;
+        } else if (error.response?.data?.error) {
+          message = error.response.data.error;
+        }
+      }
+      toast.error(message);
       console.error("Error adding product:", error);
     } finally {
       setIsLoading(false);

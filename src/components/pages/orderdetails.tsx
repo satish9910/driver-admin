@@ -2,6 +2,23 @@ import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import Cookies from "js-cookie";
+import { Button } from "../ui/button";
+import { Truck } from "lucide-react";
+
+interface ShipRocketResponse {
+  success: boolean;
+  awb: string;
+  shipment_id: number;
+  order_id: number;
+  courier_name: string;
+  rate: number;
+  label_url: string;
+  pickup: {
+    status: string;
+    scheduled_date: null | string;
+    token_number: null | string;
+  };
+}
 
 const OrderDetails = () => {
   const { orderId } = useParams();
@@ -12,24 +29,29 @@ const OrderDetails = () => {
   const [updateError, setUpdateError] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedItemId, setSelectedItemId] = useState(null);
+  // const [orders, setOrders] = useState();
+  const [shipmentLoading, setShipmentLoading] = useState<
+    Record<number, boolean>
+  >({});
   const role = Cookies.get("user_role");
   const isAdmin = role === "admin";
   const isVendor = role === "vendor";
-  const token = Cookies.get(isAdmin? "admin_token": "vendor_token");
+  const token = Cookies.get(isAdmin ? "admin_token" : "vendor_token");
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        const url =
-          isAdmin
-            ? `${import.meta.env.VITE_BASE_UR}admin/get-order/${orderId}`
-            : `${import.meta.env.VITE_BASE_UR}vendor/get-order/${orderId}`;
+        const url = isAdmin
+          ? `${import.meta.env.VITE_BASE_UR}admin/get-order/${orderId}`
+          : `${import.meta.env.VITE_BASE_UR}vendor/get-order/${orderId}`;
         const response = await axios.get(url, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
         setOrder(response.data);
+        console.log("Order Details:", response.data.shipments
+);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -47,10 +69,9 @@ const OrderDetails = () => {
     setUpdateError(null);
 
     try {
-      const url =
-        isAdmin
-          ? `${import.meta.env.VITE_BASE_UR}admin/update-order-status-admin`
-          : `${import.meta.env.VITE_BASE_UR}vendor/update-order-item-status`;
+      const url = isAdmin
+        ? `${import.meta.env.VITE_BASE_UR}admin/update-order-status-admin`
+        : `${import.meta.env.VITE_BASE_UR}vendor/update-order-item-status`;
 
       await axios.put(
         url,
@@ -76,12 +97,58 @@ const OrderDetails = () => {
         ),
       }));
 
+
+
       setSelectedStatus("");
       setSelectedItemId(null);
     } catch (err) {
       setUpdateError(err.response?.data?.message || err.message);
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const createShipRocketOrder = async (orderId: number) => {
+    try {
+      setShipmentLoading((prev) => ({ ...prev, [orderId]: true }));
+
+      const response = await fetch(
+        `http://103.189.173.127:3000/api/vendor/one-click-create-shiprocket-order/${orderId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to create ShipRocket order: ${response.statusText}`
+        );
+      }
+
+      const data: ShipRocketResponse = await response.json();
+
+      if (data.success && data.label_url) {
+        // Open the label URL in a new tab to download
+        window.open(data.label_url, "_blank");
+
+        // Optionally update the order status in the UI
+        // setOrders((prevOrders) =>
+        //   prevOrders.map((order) =>
+        //     order.id === orderId
+        //       ? { ...order, status: "SHIPPED" } // Update status to shipped
+        //       : order
+        //   )
+        // );
+      }
+    } catch (error) {
+      console.error("Error creating ShipRocket order:", error);
+      alert(`Failed to create ShipRocket order: ${error.message}`);
+    } finally {
+      setShipmentLoading((prev) => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -227,6 +294,7 @@ const OrderDetails = () => {
         )}
 
         {/* Order Summary Card */}
+       
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100">
           <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
             <h2 className="text-xl font-semibold">Order : {order.id}</h2>
@@ -294,43 +362,76 @@ const OrderDetails = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
-              Order Summary
-            </h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="font-medium">
-                  ₹
-                  {(
-                    parseFloat(order.totalAmount) +
-                    parseFloat(order.discount) -
-                    parseFloat(order.gst)
-                  ).toFixed(2)}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">GST</span>
-                <span className="font-medium">₹{order.gst}</span>
-              </div>
-              {order.discount !== "0" && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">
-                    Discount ({order.couponCode})
-                  </span>
-                  <span className="font-medium text-green-600">
-                    -₹{order.discount}
-                  </span>
+            {/* Shipment Details or Ship Now Button */}
+            {isVendor && (
+              order.shipments && order.shipments.length > 0 ? (
+              <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
+                Shipment Details
+                </h3>
+                {order.shipments.map((shipment) => (
+                <div key={shipment.id} className="mb-4">
+                  <div className="flex justify-between items-center">
+                  <div>
+                    <div className="font-medium text-gray-800">
+                    AWB: {shipment.awb}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                    Courier: {shipment.courierName}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                    Status: {shipment.status}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                    Rate: ₹{shipment.rate}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                    Pickup Status: {shipment.pickupStatus}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                    Created: {formatDate(shipment.createdAt)}
+                    </div>
+                  </div>
+                  {shipment.labelUrl && (
+                    <a
+                    href={shipment.labelUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                    >
+                    Download Label
+                    </a>
+                  )}
+                  </div>
                 </div>
-              )}
-              <div className="border-t border-gray-200 pt-3 mt-3 flex justify-between">
-                <span className="font-semibold">Total</span>
-                <span className="font-bold text-lg">₹{order.totalAmount}</span>
+                ))}
               </div>
+              ) : (
+              <div className="bg-white flex justify-center items-center rounded-xl shadow-lg p-6 border border-gray-100">
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => createShipRocketOrder(order.id)}
+                disabled={shipmentLoading[order.id]}
+                className="mb-6 bg-blue-600 text-white hover:bg-blue-700 hover:text-white flex items-center"
+                >
+                {shipmentLoading[order.id] ? (
+                  "Processing..."
+                ) : (
+                  <>
+                  <Truck className="h-4 w-4 mr-2" />
+                  Ship Now
+                  </>
+                )}
+                </Button>
+              </div>
+              )
+            )}
+
+          
+            
+            
             </div>
-          </div>
-        </div>
 
         {/* Order Items */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">

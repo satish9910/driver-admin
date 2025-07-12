@@ -385,6 +385,7 @@ export function SubCategoryManagement() {
                 <div>
                   <Label htmlFor="mainCategoryId">Main Category</Label>
                   <Select
+                    
                     onValueChange={(value) =>
                       setFormData((prev) => ({
                         ...prev,
@@ -414,6 +415,7 @@ export function SubCategoryManagement() {
                     id="name"
                     name="name"
                     placeholder="Enter sub-category name"
+                    className="mt-4"
                     value={formData.name}
                     onChange={handleInputChange}
                     required
@@ -424,6 +426,7 @@ export function SubCategoryManagement() {
                   <Input
                     id="description"
                     name="description"
+                    className="mt-4 "
                     placeholder="Enter description"
                     value={formData.description}
                     onChange={handleInputChange}
@@ -434,6 +437,7 @@ export function SubCategoryManagement() {
                   <Input
                     id="image"
                     type="file"
+                    className="mt-4 "
                     accept="image/*"
                     onChange={handleFileChange}
                   />

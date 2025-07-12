@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {toast} from "sonner";
 import {
   Table,
   TableBody,
@@ -73,6 +74,8 @@ export function CategoryManagement() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const response = await fetch(
           `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
           {
@@ -83,7 +86,14 @@ export function CategoryManagement() {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to fetch categories");
+          let errorMsg = "Failed to fetch categories";
+          try {
+            const errorData = await response.json();
+            if (errorData?.message) errorMsg = errorData.message;
+          } catch {
+            // ignore JSON parse error
+          }
+          throw new Error(errorMsg);
         }
 
         const data = await response.json();
@@ -96,6 +106,7 @@ export function CategoryManagement() {
         setError(
           err instanceof Error ? err.message : "An unknown error occurred"
         );
+        setCategories([]);
       } finally {
         setLoading(false);
       }
@@ -214,7 +225,7 @@ export function CategoryManagement() {
           )
         );
         setIsEditDialogOpen(false);
-        alert("Category updated successfully");
+       toast.success("Category updated successfully");
       } else {
         throw new Error(data.message || "Failed to update category");
       }
@@ -225,7 +236,7 @@ export function CategoryManagement() {
 
   const handleAddCategory = async () => {
     if (!addFormData.name) {
-      alert("Category name is required");
+      toast.error("Category name is required");
       return;
     }
 
@@ -262,12 +273,12 @@ export function CategoryManagement() {
           image: null,
         });
         setAddImagePreview("");
-        alert("Category added successfully");
+        toast.success("Category added successfully");
       } else {
         throw new Error(data.message || "Failed to add category");
       }
     } catch (err) {
-      alert(err instanceof Error ? err.message : "An unknown error occurred");
+      toast.error(err instanceof Error ? err.message : "An unknown error occurred");
     }
   };
 
@@ -317,10 +328,11 @@ export function CategoryManagement() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="categoryName">Category Name</Label>
+                  <Label htmlFor="categoryName" >Category Name</Label>
                   <Input
                     id="categoryName"
                     name="name"
+                    className="mt-4 "
                     value={addFormData.name}
                     onChange={handleAddFormChange}
                     placeholder="Enter category name"
@@ -331,6 +343,7 @@ export function CategoryManagement() {
                   <Input
                     id="description"
                     name="description"
+                    className="mt-4"
                     value={addFormData.description}
                     onChange={handleAddFormChange}
                     placeholder="Enter description"
@@ -342,6 +355,7 @@ export function CategoryManagement() {
                     id="image"
                     type="file"
                     accept="image/*"
+                    className="mt-4"
                     onChange={handleAddImageChange}
                   />
                   {addImagePreview && (
@@ -444,49 +458,56 @@ export function CategoryManagement() {
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={async () => {
-                            if (
-                              confirm(
-                                "Are you sure you want to delete this category?"
-                              )
-                            ) {
-                              try {
-                                const response = await fetch(
-                                  `${
-                                    import.meta.env.VITE_BASE_UR
-                                  }admin/delete-main-category/${category.id}`,
-                                  {
-                                    method: "DELETE",
-                                    headers: {
-                                      Authorization: `Bearer ${token}`,
-                                    },
-                                  }
-                                );
-
-                                if (!response.ok) {
-                                  throw new Error("Failed to delete category");
-                                }
-
-                                const data = await response.json();
-                                if (data.success) {
-                                  setCategories((prevCategories) =>
-                                    prevCategories.filter(
-                                      (cat) => cat.id !== category.id
-                                    )
-                                  );
-                                  alert("Category deleted successfully");
-                                } else {
-                                  throw new Error(
-                                    data.message || "Failed to delete category"
-                                  );
-                                }
-                              } catch (err) {
-                                alert(
-                                  err instanceof Error
-                                    ? err.message
-                                    : "An unknown error occurred"
-                                );
+                          if (
+                            confirm(
+                            "Are you sure you want to delete this category?"
+                            )
+                          ) {
+                            try {
+                            const response = await fetch(
+                              `${
+                              import.meta.env.VITE_BASE_UR
+                              }admin/delete-main-category/${category.id}`,
+                              {
+                              method: "DELETE",
+                              headers: {
+                                Authorization: `Bearer ${token}`,
+                              },
                               }
+                            );
+
+                            if (!response.ok) {
+                              let errorMsg = "Failed to delete category";
+                              try {
+                              const errorData = await response.json();
+                              if (errorData?.message) errorMsg = errorData.message;
+                              } catch {
+                              // ignore JSON parse error
+                              }
+                              throw new Error(errorMsg);
                             }
+
+                            const data = await response.json();
+                            if (data.success) {
+                              setCategories((prevCategories) =>
+                              prevCategories.filter(
+                                (cat) => cat.id !== category.id
+                              )
+                              );
+                              toast.success("Category deleted successfully");
+                            } else {
+                              throw new Error(
+                              data.message || "Failed to delete category"
+                              );
+                            }
+                            } catch (err) {
+                            toast.error(
+                              err instanceof Error
+                              ? err.message
+                              : "An unknown error occurred"
+                            );
+                            }
+                          }
                           }}
                         >
                           <Trash2 className="mr-2 h-4 w-4" />

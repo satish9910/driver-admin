@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
+import { toast, Toaster } from "sonner";
 import {
   Table,
   TableBody,
@@ -100,7 +101,7 @@ export function OrderManagement() {
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [shipmentLoading, setShipmentLoading] = useState<Record<number, boolean>>({});
+
   const role = Cookies.get("user_role");
   const isAdmin = role === "admin";
   const isVendor = role === "vendor";
@@ -123,7 +124,7 @@ export function OrderManagement() {
     const fetchOrders = async () => {
       try {
         setLoading(true);
-        
+
         let apiUrl = "";
         if (isAdmin) {
           apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-orders`;
@@ -145,16 +146,26 @@ export function OrderManagement() {
 
         const data = await response.json();
         setOrders(data.data || data); // Handle different response structures
-      } catch (error) {
+        toast.success("Orders loaded successfully");
+      } catch (error: unknown) {
         console.error("Error fetching orders:", error);
-        setError(error.message);
+        if (error instanceof Error) {
+          setError(error.message);
+          toast.error(error.message);
+        } else if (typeof error === "string") {
+          setError(error);
+          toast.error(error);
+        } else {
+          setError("An unknown error occurred while fetching orders.");
+          toast.error("An unknown error occurred while fetching orders.");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrders();
-  }, []);
+  }, [isAdmin, isVendor, token]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -186,47 +197,7 @@ export function OrderManagement() {
     }
   };
 
-  const createShipRocketOrder = async (orderId: number) => {
-    try {
-      setShipmentLoading(prev => ({ ...prev, [orderId]: true }));
-      
-      const response = await fetch(
-        `http://103.189.173.127:3000/api/vendor/one-click-create-shiprocket-order/${orderId}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
 
-      if (!response.ok) {
-        throw new Error(`Failed to create ShipRocket order: ${response.statusText}`);
-      }
-
-      const data: ShipRocketResponse = await response.json();
-      
-      if (data.success && data.label_url) {
-        // Open the label URL in a new tab to download
-        window.open(data.label_url, "_blank");
-        
-        // Optionally update the order status in the UI
-        setOrders(prevOrders =>
-          prevOrders.map(order =>
-            order.id === orderId
-              ? { ...order, status: "SHIPPED" } // Update status to shipped
-              : order
-          )
-        );
-      }
-    } catch (error) {
-      console.error("Error creating ShipRocket order:", error);
-      alert(`Failed to create ShipRocket order: ${error.message}`);
-    } finally {
-      setShipmentLoading(prev => ({ ...prev, [orderId]: false }));
-    }
-  };
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
@@ -261,6 +232,7 @@ export function OrderManagement() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -299,67 +271,69 @@ export function OrderManagement() {
       </div>
 
       {/* Header with Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search orders..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-10"
-            />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4 w-full">
+          <div className="relative w-full sm:w-64">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search orders..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10"
+        />
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Status: {statusFilter === "all" ? "All" : statusFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("CONFIRMED")}>
-                Confirmed
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("PROCESSING")}>
-                Processing
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("SHIPPED")}>
-                Shipped
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("DELIVERED")}>
-                Delivered
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("CANCELLED")}>
-                Cancelled
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Payment:{" "}
-                {paymentFilter === "all"
-                  ? "All"
-                  : getPaymentMethodName(paymentFilter)}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setPaymentFilter("all")}>
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPaymentFilter("razorpay")}>
-                Razorpay
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setPaymentFilter("cod")}>
-                Cash on Delivery
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-4 w-full sm:w-auto">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+          <Filter className="h-4 w-4 mr-2" />
+          Status: {statusFilter === "all" ? "All" : statusFilter}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setStatusFilter("all")}>
+          All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("CONFIRMED")}>
+          Confirmed
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("PROCESSING")}>
+          Processing
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("SHIPPED")}>
+          Shipped
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("DELIVERED")}>
+          Delivered
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setStatusFilter("CANCELLED")}>
+          Cancelled
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
+          <Filter className="h-4 w-4 mr-2" />
+          Payment:{" "}
+          {paymentFilter === "all"
+            ? "All"
+            : getPaymentMethodName(paymentFilter)}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => setPaymentFilter("all")}>
+          All
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPaymentFilter("razorpay")}>
+          Razorpay
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setPaymentFilter("cod")}>
+          Cash on Delivery
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -415,7 +389,7 @@ export function OrderManagement() {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                       
-                          <Button
+                          {/* <Button
                             variant="outline"
                             size="sm"
                             onClick={() => createShipRocketOrder(order.id)}
@@ -429,7 +403,7 @@ export function OrderManagement() {
                                 Ship Now
                               </>
                             )}
-                          </Button>
+                          </Button> */}
                      
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -468,6 +442,8 @@ export function OrderManagement() {
         </CardContent>
       </Card>
     </div>
+    <Toaster position="top-right" richColors closeButton />
+    </>
   );
 }
 

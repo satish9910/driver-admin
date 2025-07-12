@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams } from "react-router-dom";
-import { Header } from "../layout/Header";
-import { Sidebar } from "../layout/Sidebar";
+import {toast} from "sonner";
+
 
 const VendorProfile = () => {
   const { vendorId } = useParams();
@@ -26,8 +26,9 @@ const VendorProfile = () => {
         );
         setUserData(response.data.vendor);
         setLoading(false);
-      } catch (err) {
-        setError(err.message);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch vendor data");
+        toast.error(err.message || "Failed to fetch vendor data");
         setLoading(false);
       }
     };
@@ -52,8 +53,10 @@ const VendorProfile = () => {
       );
 
       setUserData(response.data.vendor);
-    } catch (err) {
-      setError(err.message);
+      toast.success("Vendor status updated successfully");
+    } catch (err: any) {
+      setError(err.message || "Failed to update vendor status");
+      toast.error(err.message || "Failed to update vendor status");
     } finally {
       setUpdatingStatus(false);
     }
@@ -76,6 +79,7 @@ const VendorProfile = () => {
               <strong className="font-bold">Error: </strong>
               <span className="block sm:inline">{error}</span>
             </div>
+          
           </div>
         </div>
       </div>
@@ -99,6 +103,7 @@ const VendorProfile = () => {
               <strong className="font-bold">Warning: </strong>
               <span className="block sm:inline">No user data found</span>
             </div>
+         
           </div>
         </div>
       </div>
@@ -110,6 +115,8 @@ const VendorProfile = () => {
     userData.Address?.find((addr) => addr.isDefault) || userData.Address?.[0];
 
   return (
+    <>
+   
     <div className="flex h-screen">
       {/* <Sidebar
         activeSection="userProfile"
@@ -501,6 +508,7 @@ const VendorProfile = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

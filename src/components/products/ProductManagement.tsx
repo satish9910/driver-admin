@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+
 import {
   Table,
   TableBody,
@@ -137,7 +138,11 @@ export function ProductManagement() {
   const handleDeleteProduct = async (productId: number) => {
     // Only admin should be able to delete products
     if (!isAdmin) {
-      setError("You don't have permission to delete products");
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to delete products",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -160,14 +165,31 @@ export function ProductManagement() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to delete product");
+      const data = await response.json();
+
+      if (!response.ok || data.status === false) {
+        const errorMsg =  data?.message || "Failed to delete product";
+        toast({
+          title: "Delete Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        return;
       }
+
+      toast({
+        title: "Product Deleted",
+        description: "The product was deleted successfully.",
+      });
 
       // Refresh the product list after successful deletion
       await fetchProducts();
-    } catch (err) {
-      setError(err.message);
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err?.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
   const getStatusColor = (stock: number) => {
@@ -223,9 +245,9 @@ export function ProductManagement() {
     return <div>Loading products...</div>;
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
-  }
+  // if (error) {
+  //   return <div>Error: {error}</div>;
+  // }
 
 
   return (

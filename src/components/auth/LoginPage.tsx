@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Cookies from "js-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import {toast , Toaster} from "sonner"
 
 // Replace these with your actual UI components or use plain HTML
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,13 +48,9 @@ const LoginPage = () => {
         // Save token and role in cookies
         Cookies.set(`${userType}_token`, data.token, {
           expires: rememberMe ? 7 : undefined,
-        
         });
-        
-        // Save user role in cookies
         Cookies.set("user_role", userType, {
           expires: rememberMe ? 7 : undefined,
-        
         });
 
         // Save user data in cookies if needed
@@ -61,22 +58,25 @@ const LoginPage = () => {
         if (userData) {
           Cookies.set("user_data", JSON.stringify(userData), {
             expires: rememberMe ? 7 : undefined,
-          
           });
         }
 
         // Redirect based on role
+        toast.success("Login successful!");
         navigate(userType === "admin" ? "/dashboard" : "/vendor/dashboard");
       } else {
         setError(data?.message || "Invalid credentials.");
+        toast.error(data?.message || "Invalid credentials.");
       }
     } catch (err) {
       console.error(err);
       setError("Something went wrong.");
+      toast.error("Something went wrong.");
     }
   };
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -90,10 +90,7 @@ const LoginPage = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {error && (
-                <p className="text-sm text-red-500 text-center">{error}</p>
-              )}
-              
+            
               <div>
                 <Label>Login As</Label>
                 <RadioGroup 
@@ -190,6 +187,8 @@ const LoginPage = () => {
         </div>
       </div>
     </div>
+    <Toaster position="top-right" richColors closeButton />
+    </>
   );
 };
 

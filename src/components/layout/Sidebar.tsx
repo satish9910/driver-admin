@@ -208,7 +208,7 @@ export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProp
             variant="ghost" 
             size="icon" 
             className="w-full h-10"
-            onClick={()=>handleLogout}
+            onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
           </Button>

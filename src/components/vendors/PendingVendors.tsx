@@ -106,7 +106,7 @@ export function PendingVendors() {
   }, []);
 
   const filteredVendors = vendors.filter((vendor) =>
-    vendor.name.toLowerCase().includes(searchTerm.toLowerCase())
+    vendor?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
   );
 
   const onSubmit = async (values) => {
@@ -164,10 +164,10 @@ export function PendingVendors() {
               className="w-64 pl-10"
             />
           </div>
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
             Filter
-          </Button>
+          </Button> */}
         </div>
         <div className="flex space-x-2">
           {/* <Button variant="outline">Export</Button> */}
@@ -331,13 +331,13 @@ export function PendingVendors() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
-                          <DropdownMenuItem>View Wallet</DropdownMenuItem>
-                          {vendor.status === "ACTIVE" && (
+                          {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
+                          {/* <DropdownMenuItem>View Wallet</DropdownMenuItem> */}
+                          {/* {vendor.status === "ACTIVE" && (
                             <DropdownMenuItem className="text-red-600">
                               Suspend
                             </DropdownMenuItem>
-                          )}
+                          )} */}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

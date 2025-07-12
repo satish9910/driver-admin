@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {toast , Toaster} from "sonner";
 import {
   Table,
   TableBody,
@@ -82,7 +83,6 @@ export function VendorManagement() {
       role: "VENDOR",
     },
   });
-
   useEffect(() => {
     const fetchVendors = async () => {
       try {
@@ -96,9 +96,19 @@ export function VendorManagement() {
         );
         if (response.data.success) {
           setVendors(response.data.vendors);
+        } else {
+          toast.error(response.data.message || "Failed to fetch vendors.");
         }
       } catch (error) {
         console.error("Failed to fetch vendors:", error);
+        let errorMessage = "Failed to fetch vendors. Please try again.";
+        if (axios.isAxiosError(error)) {
+          errorMessage =
+            error.response?.data?.message ||
+            error.message ||
+            errorMessage;
+        }
+        toast.error(errorMessage);
       }
     };
 
@@ -141,16 +151,24 @@ export function VendorManagement() {
         setVendors(vendorsResponse.data.vendors);
         setIsAddVendorOpen(false);
         form.reset();
+        toast.success("Vendor added successfully!");
+      } else {
+        toast.error(response.data.message || "Failed to add vendor.");
       }
     } catch (error) {
       console.error("Failed to add vendor:", error);
-      // Handle error (e.g., show error message)
+      toast.error(
+        error?.response?.data?.message ||
+          "Failed to add vendor. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
+    <>
+    <Toaster position="top-right" richColors closeButton />
     <div className="space-y-6 p-6 ">
       {/* Header with Search and Filter */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 ">
@@ -164,10 +182,10 @@ export function VendorManagement() {
               className="w-64 pl-10"
             />
           </div>
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-2" />
             Filter
-          </Button>
+          </Button> */}
         </div>
         <div className="flex space-x-2">
           {/* <Button variant="outline">Export</Button> */}
@@ -333,13 +351,13 @@ export function VendorManagement() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          {/* <DropdownMenuItem>Edit</DropdownMenuItem>
                           <DropdownMenuItem>View Wallet</DropdownMenuItem>
                           {vendor.status === "ACTIVE" && (
                             <DropdownMenuItem className="text-red-600">
                               Suspend
                             </DropdownMenuItem>
-                          )}
+                          )} */}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -351,5 +369,7 @@ export function VendorManagement() {
         </CardContent>
       </Card>
     </div>
+    <Toaster position="top-right" richColors closeButton />
+     </>
   );
 }
