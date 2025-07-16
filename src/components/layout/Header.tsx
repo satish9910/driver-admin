@@ -158,12 +158,13 @@ export function Header({ title, subtitle }: HeaderProps) {
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <Link to="/profile" >
-              <DropdownMenuItem>
-               
-                Profile
-              </DropdownMenuItem>
-              </Link>
+                {role === "vendor" && (
+                <Link to="/profile">
+                  <DropdownMenuItem>
+                  Profile
+                  </DropdownMenuItem>
+                </Link>
+                )}
 
               <DropdownMenuItem
                 onClick={handleLogout}

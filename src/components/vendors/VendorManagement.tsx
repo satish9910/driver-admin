@@ -187,10 +187,10 @@ export function VendorManagement() {
             Filter
           </Button> */}
         </div>
-        <div className="flex space-x-2">
-          {/* <Button variant="outline">Export</Button> */}
+        {/* <div className="flex space-x-2">
+        
           <Button onClick={() => setIsAddVendorOpen(true)}>Add Vendor</Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Add Vendor Modal */}

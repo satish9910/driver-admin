@@ -111,8 +111,11 @@ const VendorProfile = () => {
   }
 
   // Get default address if exists
+  // Get default pickup address if exists
   const defaultAddress =
-    userData.Address?.find((addr) => addr.isDefault) || userData.Address?.[0];
+    userData.pickupAddresses && userData.pickupAddresses.length > 0
+      ? userData.pickupAddresses[0]
+      : null;
 
   return (
     <>
@@ -467,7 +470,19 @@ const VendorProfile = () => {
                     <div>
                       <p className="text-sm text-gray-500">Street Address</p>
                       <p className="font-medium text-gray-800">
-                        {defaultAddress.houseNo}, {defaultAddress.street}
+                        {defaultAddress.address}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Country</p>
+                      <p className="font-medium text-gray-800">
+                        {defaultAddress.country}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">State</p>
+                      <p className="font-medium text-gray-800">
+                        {defaultAddress.state}
                       </p>
                     </div>
                     <div>
@@ -476,24 +491,18 @@ const VendorProfile = () => {
                         {defaultAddress.city}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-500">District</p>
-                      <p className="font-medium text-gray-800">
-                        {defaultAddress.district}
-                      </p>
-                    </div>
+                  
                     <div>
                       <p className="text-sm text-gray-500">Pincode</p>
                       <p className="font-medium text-gray-800">
-                        {defaultAddress.pincode}
+                        {defaultAddress.pin_code}
                       </p>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Address Type</p>
+                      <p className="text-sm text-gray-500">PickUp Location</p>
                       <p className="font-medium text-gray-800">
-                        {defaultAddress.isDefault
-                          ? "Default Address"
-                          : "Secondary Address"}
+                        {defaultAddress.pickup_location
+                        }
                       </p>
                     </div>
                   </div>

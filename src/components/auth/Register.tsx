@@ -329,7 +329,7 @@ const GstDetailsStep = ({
   setError,
 }) => {
   const handleSubmit = () => {
-    if (!formData.gstinNumber && !formData.cinNumber) {
+    if (!formData.gstinNumber && !formData.eidNumber) {
       setError("Please enter GSTIN number");
       return;
     }
@@ -360,12 +360,12 @@ const GstDetailsStep = ({
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
-          CIN Number (optional)
+          EID Number (optional)
         </label>
         <input
           type="text"
-          value={formData.cinNumber || ""}
-          onChange={(e) => updateFormData("cinNumber", e.target.value)}
+          value={formData.eidNumber || ""}
+          onChange={(e) => updateFormData("eidNumber", e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
           placeholder="Enter CIN number (if available)"
         />
@@ -558,6 +558,7 @@ const PickupAddressStep = ({
           ) : (
             <select
               value={formData.country}
+              required
               onChange={(e) => handleCountryChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
             >
@@ -581,6 +582,7 @@ const PickupAddressStep = ({
           ) : (
             <select
               value={formData.state}
+              required
               onChange={(e) => updateFormData("state", e.target.value)}
               disabled={!formData.country || loadingStates}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500 disabled:bg-gray-100"
@@ -603,6 +605,7 @@ const PickupAddressStep = ({
           </label>
           <input
             type="text"
+            required
             value={formData.city}
             onChange={(e) => updateFormData("city", e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
@@ -787,7 +790,7 @@ const SupplierDetailsStep = ({
             country: formData.country || "",
             pin_code: formData.pincode,
             gst_no: formData.gstinNumber,
-            cin_no: formData.cinNumber || "",
+            eid_no: formData.eidNumber || "",
             bank_name: formData.bankName || "",
             bank_account_no: formData.accountNumber,
             bank_ifsc: formData.ifscCode,
@@ -803,10 +806,43 @@ const SupplierDetailsStep = ({
         // Redirect to dashboard or login page
         window.location.href = "/login"; // Adjust the redirect as needed
       } else {
-        setError(data.message || "Registration failed. Please try again.");
+        // Try to parse error details if present
+        let errorMessages = [];
+        if (data.error) {
+          try {
+            const errorObj = JSON.parse(data.error);
+            for (const key in errorObj) {
+              if (Array.isArray(errorObj[key])) {
+                errorMessages = errorMessages.concat(errorObj[key]);
+              } else if (typeof errorObj[key] === "string") {
+                errorMessages.push(errorObj[key]);
+              }
+            }
+          } catch {
+            errorMessages.push(data.error);
+          }
+        }
+        const errorMsg =
+          errorMessages.length > 0
+            ? errorMessages.join(" ")
+            : data.message || "Registration failed. Please try again.";
+        setError(errorMsg);
+        toast.error(
+          <div>
+            <div className="font-semibold mb-1">Registration Error</div>
+            <div>
+              {errorMessages.length > 0
+                ? errorMessages.map((msg, idx) => (
+                    <div key={idx} className="text-xs whitespace-pre-wrap">{msg}</div>
+                  ))
+                : errorMsg}
+            </div>
+          </div>
+        );
       }
     } catch (err) {
       setError("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -1034,7 +1070,7 @@ const ShopingerRegistration = () => {
       <div className="hidden md:flex   items-center justify-center">
         <div className="">
           <img
-            src="loginSideBanner.svg" // Replace with your actual image path
+            src="loginSideBanner.jpg" // Replace with your actual image path
             alt="Signup illustration"
             className="w-full h-auto object-contain"
           />

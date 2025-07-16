@@ -153,16 +153,16 @@ export function CustomerManagement() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() =>
-                            (window.location.href = `/userprofile/${user.id}`)
+                            (window.location.href = `/admin/userprofile/${user.id}`)
                           }
                         >
                           <Eye className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        {/* <DropdownMenuItem>
                           <Mail className="mr-2 h-4 w-4" />
                           Send Email
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
