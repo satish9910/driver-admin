@@ -367,7 +367,7 @@ const GstDetailsStep = ({
           value={formData.eidNumber || ""}
           onChange={(e) => updateFormData("eidNumber", e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
-          placeholder="Enter CIN number (if available)"
+          placeholder="Enter EID number (if available)"
         />
         <p className="text-sm text-gray-500 mt-1">
           21-digit Corporate Identification Number (optional)
@@ -801,10 +801,10 @@ const SupplierDetailsStep = ({
       const data = await response.json();
 
       if (response.ok) {
-        alert("Registration successful! Welcome to Shopinger!");
+        toast.success("Registration successful! Welcome to Shopinger!");
 
         // Redirect to dashboard or login page
-        window.location.href = "/login"; // Adjust the redirect as needed
+        window.location.href = "https://shopinger.co.in/admin/login"; // Adjust the redirect as needed
       } else {
         // Try to parse error details if present
         let errorMessages = [];
@@ -1065,66 +1065,66 @@ const ShopingerRegistration = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50  flex justify-between items-start ">
-      {/* Left side with image */}
-      <div className="hidden md:flex   items-center justify-center">
-        <div className="">
-          <img
-            src="loginSideBanner.jpg" // Replace with your actual image path
-            alt="Signup illustration"
-            className="w-full h-auto object-contain"
-          />
-        </div>
-      </div>
-
-      {/* Right side with form content */}
-      <div className="w-full flex-1 p-8">
-        <div className="text-center mb-8 relative">
-          <div className="text-center mb-8">
-            <img
-              src="logo.png"
-              alt="Shopinger Logo"
-              className="mx-auto h-12 w-auto mb-2"
-            />
-          </div>
-          {currentStep > 1 && (
-            <button
-              onClick={handlePrevious}
-              className="absolute left-0 top-0 p-2 hover:bg-gray-200 rounded-full"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-
-        <StepIndicator />
-
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          {renderStep()}
-        </div>
-
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{" "}
-            <Link to="/login" className="text-blue-600">
-              <Button variant="link" className="p-0">
-                Vendor Login
-              </Button>
-            </Link>
-          </p>
-        </div>
-
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>© 2025 Shopinger. All rights reserved.</p>
-        </div>
-      </div>
+   <div className="min-h-screen bg-gray-50 flex justify-between items-start">
+  {/* Left side with image */}
+  <div className="hidden md:flex items-center justify-center">
+    <div>
+      <img
+        src="loginSideBanner.png" // Replace with your actual image path
+        alt="Signup illustration"
+        className="w-full h-auto object-contain"
+      />
     </div>
+  </div>
+
+  {/* Right side with form content */}
+  <div className="w-full flex-1 p-8">
+    <div className="text-center mb-8 relative">
+      <div className="text-center mb-8">
+        <img
+          src="logo.png"
+          alt="Shopinger Logo"
+          className="mx-auto h-12 w-auto mb-2"
+        />
+      </div>
+      {currentStep > 1 && (
+        <button
+          onClick={handlePrevious}
+          className="absolute left-0 top-0 p-2 hover:bg-gray-200 rounded-full"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+      )}
+    </div>
+
+    <StepIndicator />
+
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+
+      {renderStep()}
+    </div>
+
+    <div className="mt-6 text-center">
+      <p className="text-sm text-gray-600">
+        Already have an account?{" "}
+        <Link to="/login" className="text-blue-600">
+          <Button variant="link" className="p-0">
+            Vendor Login
+          </Button>
+        </Link>
+      </p>
+    </div>
+
+    <div className="text-center mt-8 text-sm text-gray-500">
+      <p>© 2025 Shopinger. All rights reserved.</p>
+    </div>
+  </div>
+</div>
   );
 };
 
