@@ -113,7 +113,7 @@ const OrderDetails = () => {
       setShipmentLoading((prev) => ({ ...prev, [orderId]: true }));
 
       const response = await fetch(
-        `http://103.189.173.127:3000/api/vendor/one-click-create-shiprocket-order/${orderId}`,
+        `${import.meta.env.VITE_BASE_UR}vendor/one-click-create-shiprocket-order/${orderId}`,
         {
           method: "POST",
           headers: {

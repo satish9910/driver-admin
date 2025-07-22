@@ -18,6 +18,7 @@ import {
   X,
   LogOut,
   User,
+  Contact,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Cookies from "js-cookie";
@@ -42,6 +43,7 @@ const adminSidebarItems = [
   { id: "orders", label: "Orders", icon: ShoppingCart,  },
   { id: "banners", label: "Banners", icon: Image },
   { id: "transactions", label: "Transactions", icon: Wallet },
+  { id: "contact-us", label: "Contact Us", icon: Contact },
   { id: "pages", label: "Static Pages", icon: FileText },
   { id: "settings", label: "Settings", icon: Settings },
 ];

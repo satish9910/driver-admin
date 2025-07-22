@@ -16,7 +16,22 @@ import { Button } from "../ui/button";
 import {toast} from "sonner";
 
 // Step 1: Email, Phone & Password Component
-const EmailPhoneStep = ({
+type EmailPhoneStepProps = {
+  formData: {
+    email: string;
+    phone: string;
+    password: string;
+    [key: string]: any;
+  };
+  updateFormData: (field: string, value: string) => void;
+  onNext: (tempToken?: string) => void;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
+  error: string;
+  setError: (error: string) => void;
+};
+
+const EmailPhoneStep: React.FC<EmailPhoneStepProps> = ({
   formData,
   updateFormData,
   onNext,
@@ -26,6 +41,7 @@ const EmailPhoneStep = ({
   setError,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+
   const handleSubmit = async () => {
     if (!formData.email || !formData.phone || !formData.password) {
       setError("Please fill in all required fields");
@@ -63,7 +79,14 @@ const EmailPhoneStep = ({
         }
       );
 
+      console.log("Registration response status:", response);
+
       const data = await response.json();
+
+      localStorage.setItem("tempToken", data.tempToken || ""); // Store tempToken for later use
+      
+      console.log("Registration response:", data);  
+      // localStorage.setItem("tempToken", data.tempToken); // Store tempToken for later use
       // If Prisma error, show toast with formatted error
       if (data?.error && typeof data.error === "string" && data.error.includes("prisma")) {
         setError("A user with this email already exists.");
@@ -82,7 +105,7 @@ const EmailPhoneStep = ({
       }
 
       if (response.ok) {
-        onNext(data.vendor.id); // Pass vendorId to next step
+        onNext(data.tempToken); // Pass tempToken to next step
       } else {
         setError(data.message || "Registration failed. Please try again.");
         toast.error(data.message || "Registration failed. Please try again.");
@@ -213,7 +236,6 @@ const OtpVerificationStep = ({
   onNext,
   isLoading,
   setIsLoading,
-  error,
   setError,
   vendorId,
 }) => {
@@ -237,8 +259,7 @@ const OtpVerificationStep = ({
           },
           body: new URLSearchParams({
             otp: formData.otp,
-            phone: formData.phone,
-            vendorId: vendorId,
+            tempToken: localStorage.getItem("tempToken") || "",
           }),
         }
       );
@@ -289,33 +310,73 @@ const OtpVerificationStep = ({
   return (
     <div className="space-y-6">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">
-          OTP Verification
-        </h2>
-        <p className="text-gray-600">Enter the OTP sent to {formData.phone}</p>
+      <h2 className="text-2xl font-bold text-gray-800 mb-2">
+        OTP Verification
+      </h2>
+      <p className="text-gray-600">Enter the OTP sent to {formData.phone}</p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Enter OTP
-        </label>
-        <input
-          type="text"
-          value={formData.otp}
-          onChange={(e) => updateFormData("otp", e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
-          placeholder="Enter 4-digit OTP"
-          maxLength={4}
-        />
+      <label className="block text-sm font-medium text-gray-700 mb-2">
+        Enter OTP
+      </label>
+      <input
+        type="text"
+        value={formData.otp}
+        onChange={(e) => updateFormData("otp", e.target.value)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-pink-500 focus:border-pink-500"
+        placeholder="Enter 4-digit OTP"
+        maxLength={4}
+      />
       </div>
 
       <button
-        onClick={handleSubmit}
-        disabled={isLoading}
-        className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-[#FF710B] disabled:opacity-50 font-medium"
+      onClick={handleSubmit}
+      disabled={isLoading}
+      className="w-full bg-black text-white py-3 px-4 rounded-md hover:bg-[#FF710B] disabled:opacity-50 font-medium"
       >
-        {isLoading ? "Verifying..." : "Verify OTP"}
+      {isLoading ? "Verifying..." : "Verify OTP"}
       </button>
+
+      <div className="mt-4 text-center">
+      <button
+        type="button"
+        disabled={isLoading}
+        className="text-blue-600 hover:underline text-sm"
+        onClick={async () => {
+        setIsLoading(true);
+        setError("");
+        try {
+          const response = await fetch(
+          `${import.meta.env.VITE_BASE_UR}public/vendor-resend-otp`,
+          {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ tempToken: localStorage.getItem("tempToken") || "" }),
+           
+          }
+          );
+          const data = await response.json();
+          localStorage.setItem("tempToken", data.tempToken || ""); // Update tempToken if needed
+          if (response.ok) {
+          toast.success("OTP resent successfully!");
+          } else {
+          setError(data.message || "Failed to resend OTP.");
+          toast.error(data.message || "Failed to resend OTP.");
+          }
+        } catch (err) {
+          setError("Network error. Please try again.");
+          toast.error("Network error. Please try again.");
+        } finally {
+          setIsLoading(false);
+        }
+        }}
+      >
+        Resend OTP
+      </button>
+      </div>
     </div>
   );
 };
@@ -370,7 +431,7 @@ const GstDetailsStep = ({
           placeholder="Enter EID number (if available)"
         />
         <p className="text-sm text-gray-500 mt-1">
-          21-digit Corporate Identification Number (optional)
+          Enrolment ID  (optional)
         </p>
       </div>
 
@@ -1065,21 +1126,19 @@ const ShopingerRegistration = () => {
   };
 
   return (
-   <div className="min-h-screen bg-gray-50 flex justify-between items-start">
-  {/* Left side with image */}
-  <div className="hidden md:flex items-center justify-center">
-    <div>
-      <img
-        src="loginSideBanner.png" // Replace with your actual image path
-        alt="Signup illustration"
-        className="w-full h-auto object-contain"
-      />
-    </div>
+<div className="flex min-h-screen bg-gray-50">
+  {/* Left side with image - takes 50% width on medium screens and up */}
+  <div className="hidden md:flex md:w-1/2 bg-gray-900 items-center justify-center p-8">
+    <img
+      src="loginSideBanner.png"
+      alt="Signup illustration"
+      className="max-w-full h-auto object-contain"
+    />
   </div>
 
-  {/* Right side with form content */}
-  <div className="w-full flex-1 p-8">
-    <div className="text-center mb-8 relative">
+  {/* Right side with form content - takes full width on mobile, 50% on medium screens and up */}
+  <div className="w-full md:w-1/2 p-4 md:p-8 flex flex-col">
+    <div className="text-center relative">
       <div className="text-center mb-8">
         <img
           src="logo.png"
@@ -1099,7 +1158,7 @@ const ShopingerRegistration = () => {
 
     <StepIndicator />
 
-    <div className="bg-white rounded-lg shadow-sm p-6">
+    <div className="bg-white rounded-lg shadow-sm p-6 flex-1">
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-600">{error}</p>

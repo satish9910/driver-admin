@@ -43,6 +43,7 @@ import UpdateProductManagement from "./components/pages/UpdateProductManagement"
 import VendorRegisterPage from "./components/auth/Register";
 import VendorProfilePage from "./pages/Profile";
 import { cn } from "./lib/utils";
+import { ContactQueriesManagement } from "./pages/ContactQueriesManagement";
 
 
 const queryClient = new QueryClient();
@@ -114,6 +115,7 @@ const adminSectionRoutes = [
   { path: "/privacypolicy", key: "privacypolicy", element: <PrivacyPolicyPage /> },
   { path: "/refundpolicy", key: "refundpolicy", element: <RefundPolicy /> },
   { path: "/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
+  { path: "/contact-us", key: "contactus", element: <ContactQueriesManagement /> },
 ];
 
 const vendorSectionRoutes = [
