@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams, useNavigate } from "react-router-dom";
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const UpdateProductManagement = () => {
 
@@ -23,7 +25,7 @@ const UpdateProductManagement = () => {
         stock: "",
         sellingprice: "",
         attributes: [
-          { key: "color", value: "" },
+        
           { key: "size", value: "" },
         ],
       },
@@ -74,7 +76,7 @@ const UpdateProductManagement = () => {
           stock: variant.stock?.toString() || "",
           sellingprice: variant.sellingprice?.toString() || "",
           attributes: variant.attributes || [
-            { key: "color", value: "" },
+            
             { key: "size", value: "" },
           ],
               }))
@@ -85,7 +87,7 @@ const UpdateProductManagement = () => {
             stock: "",
             sellingprice: "",
             attributes: [
-              { key: "color", value: "" },
+              
               { key: "size", value: "" },
             ],
           },
@@ -214,7 +216,7 @@ const UpdateProductManagement = () => {
           stock: "",
           sellingprice: "",
           attributes: [
-            { key: "color", value: "" },
+           
             { key: "size", value: "" },
           ],
         },
@@ -478,23 +480,22 @@ const UpdateProductManagement = () => {
                 </div>
               )}
 
-              <div>
+               <div>
                 <label
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700"
                 >
                   Description <span className="text-red-500">*</span>
                 </label>
-                <textarea
-                  id="description"
-                  name="description"
-                  rows={4}
+                <ReactQuill
+                  theme="snow"
                   value={product.description}
-                  onChange={handleChange}
-                  
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                  onChange={(value) =>
+                  setProduct((prev) => ({ ...prev, description: value }))
+                  }
+                  className="mt-1"
                 />
-              </div>
+                </div>
 
               <div>
                 <div className="flex justify-between items-center mb-4">
