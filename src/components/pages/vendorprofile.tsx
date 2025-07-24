@@ -419,47 +419,79 @@ const VendorProfile = () => {
 
             {/* Details Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">
                   Personal Information
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-gray-500">Full Name</p>
-                    <p className="font-medium text-gray-800">{userData.name}</p>
+                  <p className="text-sm text-gray-500">Full Name</p>
+                  <p className="font-medium text-gray-800">{userData.name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Email Address</p>
-                    <p className="font-medium text-gray-800">
-                      {userData.email}
-                    </p>
+                  <p className="text-sm text-gray-500">Email Address</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.email}
+                  </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">User Role</p>
-                    <p className="font-medium text-gray-800">{userData.role}</p>
+                  <p className="text-sm text-gray-500">User Role</p>
+                  <p className="font-medium text-gray-800">{userData.role}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Account Status</p>
-                    <p className="font-medium text-gray-800">
-                      <span
-                        className={`px-2 py-1 rounded text-xs ${
-                          userData.status === "ACTIVE"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {userData.status}
-                      </span>
-                    </p>
+                  <p className="text-sm text-gray-500">Account Status</p>
+                  <p className="font-medium text-gray-800">
+                    <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      userData.status === "ACTIVE"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                    }`}
+                    >
+                    {userData.status}
+                    </span>
+                  </p>
+                  </div>
+                
+                  <div>
+                  <p className="text-sm text-gray-500">GST Number</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.gst_no || <span className="italic text-gray-400">N/A</span>}
+                  </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Account Created</p>
-                    <p className="font-medium text-gray-800">
-                      {new Date(userData.createdAt).toLocaleString()}
-                    </p>
+                  <p className="text-sm text-gray-500">EID Number</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.eid_no || <span className="italic text-gray-400">N/A</span>}
+                  </p>
                   </div>
+                  <div>
+                  <p className="text-sm text-gray-500">Bank Name</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.bank_name || <span className="italic text-gray-400">N/A</span>}
+                  </p>
+                  </div>
+                  <div>
+                  <p className="text-sm text-gray-500">Bank Account No</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.bank_account_no || <span className="italic text-gray-400">N/A</span>}
+                  </p>
+                  </div>
+                  <div>
+                  <p className="text-sm text-gray-500">Bank IFSC</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.bank_ifsc || <span className="italic text-gray-400">N/A</span>}
+                  </p>
+                  </div>
+                    <div>
+                  <p className="text-sm text-gray-500">Account Created</p>
+                  <p className="font-medium text-gray-800">
+                    {new Date(userData.createdAt).toLocaleString()}
+                  </p>
+                  </div>
+
                 </div>
-              </div>
+                </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4">

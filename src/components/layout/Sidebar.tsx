@@ -52,7 +52,7 @@ const vendorSidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3 },
   { id: "products", label: "My Products", icon: Package },
   { id: "addproducts", label: "Add Products", icon: Package },
-  { id: "orders", label: "My Orders", icon: ShoppingCart, badge: "5" },
+  { id: "orders", label: "My Orders", icon: ShoppingCart, },
 ];
 
 export function Sidebar({ activeSection, onSectionChange, isAdmin }: SidebarProps) {

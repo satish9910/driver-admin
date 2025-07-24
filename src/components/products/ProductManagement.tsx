@@ -393,7 +393,9 @@ export function ProductManagement() {
                           className="w-10 h-10 rounded-md object-cover bg-gray-100"
                         />
                       )}
-                      <div className="font-medium">{product.name}</div>
+                      <div className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
+                        {product.name.split(" ").slice(0, 7).join(" ")}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{product.mainCategory.name}</TableCell>

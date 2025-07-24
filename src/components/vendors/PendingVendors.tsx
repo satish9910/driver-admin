@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 import {
   Table,
   TableBody,
@@ -34,12 +35,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Search, Filter, MoreHorizontal, Eye, Check, X } from "lucide-react";
+import { Search, Filter, MoreHorizontal, Eye, Check, X, Trash2, Edit } from "lucide-react";
 import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
+// Updated form schema to include all vendor fields
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -47,9 +49,14 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email.",
   }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+  shopname: z.string().min(2, {
+    message: "Shop name must be at least 2 characters.",
   }),
+  eid_no: z.string().optional(),
+  gst_no: z.string().optional(),
+  bank_name: z.string().optional(),
+  bank_account_no: z.string().optional(),
+  bank_ifsc: z.string().optional(),
   role: z.string().default("VENDOR"),
 });
 
@@ -71,6 +78,7 @@ export function PendingVendors() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currentVendor, setCurrentVendor] = useState(null);
   const token = Cookies.get("admin_token");
 
   const form = useForm({
@@ -78,32 +86,54 @@ export function PendingVendors() {
     defaultValues: {
       name: "",
       email: "",
-      password: "",
+      shopname: "",
+      eid_no: "",
+      gst_no: "",
+      bank_name: "",
+      bank_account_no: "",
+      bank_ifsc: "",
       role: "VENDOR",
     },
   });
 
-  useEffect(() => {
-    const fetchVendors = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/get-all-pending-vendors`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        if (response.data.success) {
-          setVendors(response.data.vendors);
+  const fetchVendors = async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-pending-vendors`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      } catch (error) {
-        console.error("Failed to fetch vendors:", error);
+      );
+      if (response.data.success) {
+        setVendors(response.data.vendors);
       }
-    };
+    } catch (error) {
+      console.error("Failed to fetch vendors:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchVendors();
   }, []);
+
+  // Reset form and set current vendor when opening the dialog
+  const handleEditVendor = (vendor) => {
+    setCurrentVendor(vendor);
+    form.reset({
+      name: vendor.name,
+      email: vendor.email,
+      shopname: vendor.shopname,
+      eid_no: vendor.eid_no || "",
+      gst_no: vendor.gst_no || "",
+      bank_name: vendor.bank_name || "",
+      bank_account_no: vendor.bank_account_no || "",
+      bank_ifsc: vendor.bank_ifsc || "",
+      role: vendor.role,
+    });
+    setIsAddVendorOpen(true);
+  };
 
   const filteredVendors = vendors.filter((vendor) =>
     vendor?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
@@ -112,47 +142,108 @@ export function PendingVendors() {
   const onSubmit = async (values) => {
     setIsLoading(true);
     try {
-      const formData = new URLSearchParams();
-      formData.append("name", values.name);
-      formData.append("email", values.email);
-      formData.append("password", values.password);
-      formData.append("role", values.role);
+      const payload = {
+        id: currentVendor ? currentVendor.id : undefined,
+        name: values.name,
+        email: values.email,
+        shopname: values.shopname,
+        eid_no: values.eid_no,
+        gst_no: values.gst_no,
+        bank_name: values.bank_name,
+        bank_account_no: values.bank_account_no,
+        bank_ifsc: values.bank_ifsc,
+        role: values.role,
+      };
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_UR}public/vendor-register`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      if (response.data.success) {
-        // Refresh the vendors list
-        const vendorsResponse = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
+      let response;
+      if (currentVendor) {
+        // Update existing vendor (send JSON, not FormData)
+        response = await axios.put(
+          `${import.meta.env.VITE_BASE_UR}admin/update-vendor-details`,
+          payload,
           {
             headers: {
               Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
             },
           }
         );
-        setVendors(vendorsResponse.data.vendors);
+      } else {
+        // Create new vendor (still using FormData for registration)
+        const formData = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+          if (value !== undefined) formData.append(key, value);
+        });
+        response = await axios.post(
+          `${import.meta.env.VITE_BASE_UR}public/vendor-register`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+      }
+
+      if (response.data.success) {
+        toast({
+          title: currentVendor ? "Vendor Updated" : "Vendor Added",
+          description: currentVendor 
+            ? "The vendor was updated successfully."
+            : "A new vendor was added successfully.",
+        });
+        await fetchVendors();
         setIsAddVendorOpen(false);
+        setCurrentVendor(null);
         form.reset();
       }
     } catch (error) {
-      console.error("Failed to add vendor:", error);
-      // Handle error (e.g., show error message)
+      console.error("Failed to submit vendor:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
+
+
+
+
+  const handleDeleteVendor = async (vendorId) => {
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_BASE_UR}admin/delete-vendor/${vendorId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.data.success) {
+        toast({
+          title: "Vendor Deleted",
+          description: "The vendor was deleted successfully.",
+        });
+        await fetchVendors();
+      }
+    } catch (error) {
+      console.error("Failed to delete vendor:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete vendor",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6 p-6">
-      {/* Header with Search and Filter */}
+      {/* Header with Search */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-4">
           <div className="relative">
@@ -164,98 +255,161 @@ export function PendingVendors() {
               className="w-64 pl-10"
             />
           </div>
-          {/* <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button> */}
         </div>
-        {/* <div className="flex space-x-2">
-        
-          <Button onClick={() => setIsAddVendorOpen(true)}>Add Vendor</Button>
-        </div> */}
       </div>
 
-      {/* Add Vendor Modal */}
+      {/* Edit Vendor Modal */}
       <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Add New Vendor</DialogTitle>
+            <DialogTitle>
+              {currentVendor ? "Edit Vendor" : "Add New Vendor"}
+            </DialogTitle>
             <DialogDescription>
-              Fill out the form to register a new vendor.
+              {currentVendor 
+                ? "Update the vendor details below."
+                : "Fill out the form to register a new vendor."}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter vendor name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter vendor email"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <FormControl>
-                      <Input disabled {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              /> */}
-              <div className="flex justify-end space-x-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Column 1 */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Supplier Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter vendor name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="shopname"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Shop Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter shop name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="eid_no"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>EID Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter EID number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="gst_no"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GST Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter GST number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Column 2 */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Enter email" 
+                            {...field} 
+                            disabled={currentVendor !== null}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bank_name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter bank name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bank_account_no"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Account Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter account number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="bank_ifsc"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank IFSC Code</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter IFSC code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
                 <Button
                   variant="outline"
                   type="button"
-                  onClick={() => setIsAddVendorOpen(false)}
+                  onClick={() => {
+                    setIsAddVendorOpen(false);
+                    setCurrentVendor(null);
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Adding..." : "Add Vendor"}
+                  {isLoading 
+                    ? currentVendor 
+                      ? "Updating..." 
+                      : "Adding..." 
+                    : currentVendor 
+                      ? "Update Vendor" 
+                      : "Add Vendor"}
                 </Button>
               </div>
             </form>
@@ -266,7 +420,7 @@ export function PendingVendors() {
       {/* Vendors Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Vendor Management</CardTitle>
+          <CardTitle>Pending Vendor Approvals</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -274,7 +428,7 @@ export function PendingVendors() {
               <TableRow>
                 <TableHead>Vendor Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Shop Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -285,7 +439,7 @@ export function PendingVendors() {
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
-                  <TableCell>{vendor.role}</TableCell>
+                  <TableCell>{vendor.shopname}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(vendor.status)}>
                       {vendor.status}
@@ -296,26 +450,7 @@ export function PendingVendors() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      {vendor.status === "pending" && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-green-600 border-green-600 hover:bg-green-50"
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Approve
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-red-600 border-red-600 hover:bg-red-50"
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Reject
-                          </Button>
-                        </>
-                      )}
+                    
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -331,13 +466,19 @@ export function PendingVendors() {
                             <Eye className="mr-2 h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
-                          {/* <DropdownMenuItem>Edit</DropdownMenuItem> */}
-                          {/* <DropdownMenuItem>View Wallet</DropdownMenuItem> */}
-                          {/* {vendor.status === "ACTIVE" && (
-                            <DropdownMenuItem className="text-red-600">
-                              Suspend
-                            </DropdownMenuItem>
-                          )} */}
+                          <DropdownMenuItem
+                            onClick={() => handleEditVendor(vendor)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Vendor
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleDeleteVendor(vendor.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
