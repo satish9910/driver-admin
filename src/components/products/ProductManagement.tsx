@@ -148,7 +148,7 @@ export function ProductManagement() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/delete-product/${productId}`,
+        `${import.meta.env.VITE_BASE_UR}admin/soft-delete-product/${productId}`,
         {
           method: "DELETE",
           headers: {
