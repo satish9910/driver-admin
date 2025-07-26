@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { toast } from "sonner"; 
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import { toast } from "sonner";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+
+
+
 const AddProductManagement = () => {
   const [product, setProduct] = useState({
     name: "",
@@ -18,13 +21,33 @@ const AddProductManagement = () => {
         price: "",
         stock: "",
         sellingprice: "",
-        attributes: [
-          
-          { key: "size", value: "" },
-        ],
+        attributes: [{ key: "size", value: "" }],
       },
     ],
   });
+
+
+  const modules = {
+    toolbar: [
+      ['bold', 'italic', 'underline', 'strike'],
+      ['blockquote', 'code-block'],
+      [{ 'header': 1 }, { 'header': 2 }],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      [{ 'script': 'sub'}, { 'script': 'super' }],
+      [{ 'indent': '-1'}, { 'indent': '+1' }],
+      [{ 'direction': 'rtl' }],
+      [{ 'size': ['small', false, 'large', 'huge'] }],
+      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+      [{ 'color': [] }, { 'background': [] }],
+      [{ 'font': [] }],
+      [{ 'align': [] }],
+      ['clean'],
+      ['link', 'image', 'video'],
+      
+    ]
+  };
+
+ 
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -35,12 +58,10 @@ const AddProductManagement = () => {
   const [loadingCategories, setLoadingCategories] = useState(true);
   const fileInputRef = useRef(null);
   const role = Cookies.get("user_role");
-  const vendorId =JSON.parse(Cookies.get("user_data"))?.id
-
+  const vendorId = JSON.parse(Cookies.get("user_data"))?.id;
 
   const isAdmin = role === "admin";
   const isVendor = role === "vendor";
-  
 
   const token = Cookies.get("admin_token");
 
@@ -87,10 +108,10 @@ const AddProductManagement = () => {
         (cat) => cat.id === parseInt(product.mainCategoryId)
       );
       setSubCategories(selectedMainCategory?.subCategories || []);
-      setProduct(prev => ({
+      setProduct((prev) => ({
         ...prev,
         subCategoryId: "",
-        subSubCategoryId: ""
+        subSubCategoryId: "",
       }));
     }
   }, [product.mainCategoryId, mainCategories]);
@@ -102,9 +123,9 @@ const AddProductManagement = () => {
         (subCat) => subCat.id === parseInt(product.subCategoryId)
       );
       setSubSubCategories(selectedSubCategory?.subSubCategories || []);
-      setProduct(prev => ({
+      setProduct((prev) => ({
         ...prev,
-        subSubCategoryId: ""
+        subSubCategoryId: "",
       }));
     }
   }, [product.subCategoryId, subCategories]);
@@ -138,10 +159,7 @@ const AddProductManagement = () => {
           price: "",
           stock: "",
           sellingprice: "",
-          attributes: [
-           
-            { key: "size", value: "" },
-          ],
+          attributes: [{ key: "size", value: "" }],
         },
       ],
     }));
@@ -198,21 +216,16 @@ const AddProductManagement = () => {
       const token = isVendor
         ? Cookies.get("vendor_token")
         : Cookies.get("admin_token");
-      const apiUrl =
-        isVendor
-          ? `${import.meta.env.VITE_BASE_UR}vendor/add-product`
-          : `${import.meta.env.VITE_BASE_UR}admin/add-product`;
+      const apiUrl = isVendor
+        ? `${import.meta.env.VITE_BASE_UR}vendor/add-product`
+        : `${import.meta.env.VITE_BASE_UR}admin/add-product`;
 
-      await axios.post(
-        apiUrl,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await axios.post(apiUrl, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
       setSuccess(true);
       toast.success("Product added successfully!");
@@ -230,10 +243,7 @@ const AddProductManagement = () => {
             price: "",
             stock: "",
             sellingprice: "",
-            attributes: [
-              
-              { key: "size", value: "" },
-            ],
+            attributes: [{ key: "size", value: "" }],
           },
         ],
       });
@@ -420,7 +430,7 @@ const AddProductManagement = () => {
                 <input type="hidden" name="vendorId" value={vendorId} />
               )}
 
-                <div>
+              <div>
                 <label
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700"
@@ -428,14 +438,18 @@ const AddProductManagement = () => {
                   Description <span className="text-red-500">*</span>
                 </label>
                 <ReactQuill
+
+                  
                   theme="snow"
                   value={product.description}
                   onChange={(value) =>
-                  setProduct((prev) => ({ ...prev, description: value }))
+                    setProduct((prev) => ({ ...prev, description: value }))
                   }
+                  modules={modules}
+                 
                   className="mt-1"
                 />
-                </div>
+              </div>
 
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -727,7 +741,9 @@ const AddProductManagement = () => {
                         <button
                           type="button"
                           onClick={() =>
-                            setImages((prev) => prev.filter((_, i) => i !== index))
+                            setImages((prev) =>
+                              prev.filter((_, i) => i !== index)
+                            )
                           }
                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
                         >

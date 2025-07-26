@@ -49,6 +49,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
+// Updated form schema to include all vendor fields
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -56,9 +57,14 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email.",
   }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+  shopname: z.string().min(2, {
+    message: "Shop name must be at least 2 characters.",
   }),
+  eid_no: z.string().optional(),
+  gst_no: z.string().optional(),
+  bank_name: z.string().optional(),
+  bank_account_no: z.string().optional(),
+  bank_ifsc: z.string().optional(),
   role: z.string().default("VENDOR"),
 });
 
@@ -133,8 +139,9 @@ export function VendorManagement() {
   };
   useEffect(() => {
     fetchVendors();
-  },  []);
+  }, []);
 
+  // Reset form and set current vendor when opening the dialog
   const handleEditVendor = (vendor) => {
     setCurrentVendor(vendor);
     form.reset({
@@ -156,6 +163,7 @@ export function VendorManagement() {
   );
 
   const onSubmit = async (values) => {
+    console.log("Submitting vendor:", values);
     setIsLoading(true);
     try {
       const payload = {
@@ -227,7 +235,6 @@ export function VendorManagement() {
 
   return (
     <>
-  
       <div className="space-y-6 p-6 ">
         {/* Header with Search and Filter */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 ">
@@ -504,7 +511,6 @@ export function VendorManagement() {
           </CardContent>
         </Card>
       </div>
-
     </>
   );
 }

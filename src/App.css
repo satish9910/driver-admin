@@ -40,3 +40,27 @@
 .read-the-docs {
   color: #888;
 }
+
+
+/* Add basic styling for tables in the Quill editor */
+.ql-editor .ql-snow-fancy-table-container {
+  overflow-y: auto;
+  margin: 10px 0;
+}
+.ql-editor table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ccc;
+}
+
+.ql-editor th,
+.ql-editor td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.ql-editor th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}

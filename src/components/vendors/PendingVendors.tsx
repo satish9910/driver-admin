@@ -35,7 +35,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Search, Filter, MoreHorizontal, Eye, Check, X, Trash2, Edit } from "lucide-react";
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Eye,
+  Check,
+  X,
+  Trash2,
+  Edit,
+} from "lucide-react";
 import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -140,6 +149,7 @@ export function PendingVendors() {
   );
 
   const onSubmit = async (values) => {
+    console.log("Submitting vendor:", values);
     setIsLoading(true);
     try {
       const payload = {
@@ -188,7 +198,7 @@ export function PendingVendors() {
       if (response.data.success) {
         toast({
           title: currentVendor ? "Vendor Updated" : "Vendor Added",
-          description: currentVendor 
+          description: currentVendor
             ? "The vendor was updated successfully."
             : "A new vendor was added successfully.",
         });
@@ -208,10 +218,6 @@ export function PendingVendors() {
       setIsLoading(false);
     }
   };
-
-
-
-
 
   const handleDeleteVendor = async (vendorId) => {
     try {
@@ -266,7 +272,7 @@ export function PendingVendors() {
               {currentVendor ? "Edit Vendor" : "Add New Vendor"}
             </DialogTitle>
             <DialogDescription>
-              {currentVendor 
+              {currentVendor
                 ? "Update the vendor details below."
                 : "Fill out the form to register a new vendor."}
             </DialogDescription>
@@ -339,9 +345,9 @@ export function PendingVendors() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Enter email" 
-                            {...field} 
+                          <Input
+                            placeholder="Enter email"
+                            {...field}
                             disabled={currentVendor !== null}
                           />
                         </FormControl>
@@ -369,7 +375,10 @@ export function PendingVendors() {
                       <FormItem>
                         <FormLabel>Bank Account Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter account number" {...field} />
+                          <Input
+                            placeholder="Enter account number"
+                            {...field}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -403,13 +412,13 @@ export function PendingVendors() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading 
-                    ? currentVendor 
-                      ? "Updating..." 
-                      : "Adding..." 
-                    : currentVendor 
-                      ? "Update Vendor" 
-                      : "Add Vendor"}
+                  {isLoading
+                    ? currentVendor
+                      ? "Updating..."
+                      : "Adding..."
+                    : currentVendor
+                    ? "Update Vendor"
+                    : "Add Vendor"}
                 </Button>
               </div>
             </form>
@@ -450,7 +459,6 @@ export function PendingVendors() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
-                    
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
