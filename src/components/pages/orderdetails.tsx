@@ -4,6 +4,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { Button } from "../ui/button";
 import { Truck } from "lucide-react";
+import InvoicePreview from "../Invoice";
 
 interface ShipRocketResponse {
   success: boolean;
@@ -29,6 +30,7 @@ const OrderDetails = () => {
   const [updateError, setUpdateError] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedItemId, setSelectedItemId] = useState(null);
+  const [showInvoice, setShowInvoice] = useState(false);
   // const [orders, setOrders] = useState();
   const [shipmentLoading, setShipmentLoading] = useState<
     Record<number, boolean>
@@ -50,8 +52,7 @@ const OrderDetails = () => {
           },
         });
         setOrder(response.data);
-        console.log("Order Details:", response.data.shipments
-);
+        console.log("Order Details:", response.data.shipments);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -97,8 +98,6 @@ const OrderDetails = () => {
         ),
       }));
 
-
-
       setSelectedStatus("");
       setSelectedItemId(null);
     } catch (err) {
@@ -113,7 +112,9 @@ const OrderDetails = () => {
       setShipmentLoading((prev) => ({ ...prev, [orderId]: true }));
 
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}vendor/one-click-create-shiprocket-order/${orderId}`,
+        `${
+          import.meta.env.VITE_BASE_UR
+        }vendor/one-click-create-shiprocket-order/${orderId}`,
         {
           method: "POST",
           headers: {
@@ -221,7 +222,7 @@ const OrderDetails = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Order Details</h1>
-          <div className="flex space-x-4">
+          <div className="flex gap-2 items-center">
             <span
               className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(
                 order.status
@@ -236,6 +237,14 @@ const OrderDetails = () => {
             >
               {order.orderStatus}
             </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInvoice(true)}
+              className=" bg-green-600 text-white hover:bg-green-700 hover:text-white"
+            >
+              Download Invoice
+            </Button>
           </div>
         </div>
 
@@ -294,7 +303,7 @@ const OrderDetails = () => {
         )}
 
         {/* Order Summary Card */}
-       
+
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100">
           <div className="p-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
             <h2 className="text-xl font-semibold">Order : {order.id}</h2>
@@ -362,76 +371,71 @@ const OrderDetails = () => {
             </div>
           </div>
 
-            {/* Shipment Details or Ship Now Button */}
-            {isVendor && (
-              order.shipments && order.shipments.length > 0 ? (
+          {/* Shipment Details or Ship Now Button */}
+          {isVendor &&
+            (order.shipments && order.shipments.length > 0 ? (
               <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                 <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">
-                Shipment Details
+                  Shipment Details
                 </h3>
                 {order.shipments.map((shipment) => (
-                <div key={shipment.id} className="mb-4">
-                  <div className="flex justify-between items-center">
-                  <div>
-                    <div className="font-medium text-gray-800">
-                    AWB: {shipment.awb}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                    Courier: {shipment.courierName}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                    Status: {shipment.status}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                    Rate: ₹{shipment.rate}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                    Pickup Status: {shipment.pickupStatus}
-                    </div>
-                    <div className="text-sm text-gray-600">
-                    Created: {formatDate(shipment.createdAt)}
+                  <div key={shipment.id} className="mb-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <div className="font-medium text-gray-800">
+                          AWB: {shipment.awb}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Courier: {shipment.courierName}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Status: {shipment.status}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Rate: ₹{shipment.rate}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Pickup Status: {shipment.pickupStatus}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          Created: {formatDate(shipment.createdAt)}
+                        </div>
+                      </div>
+                      {shipment.labelUrl && (
+                        <a
+                          href={shipment.labelUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                        >
+                          Download Label
+                        </a>
+                      )}
                     </div>
                   </div>
-                  {shipment.labelUrl && (
-                    <a
-                    href={shipment.labelUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-4 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                    >
-                    Download Label
-                    </a>
-                  )}
-                  </div>
-                </div>
                 ))}
               </div>
-              ) : (
+            ) : (
               <div className="bg-white flex justify-center items-center rounded-xl shadow-lg p-6 border border-gray-100">
                 <Button
-                variant="outline"
-                size="sm"
-                onClick={() => createShipRocketOrder(order.id)}
-                disabled={shipmentLoading[order.id]}
-                className="mb-6 bg-blue-600 text-white hover:bg-blue-700 hover:text-white flex items-center"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => createShipRocketOrder(order.id)}
+                  disabled={shipmentLoading[order.id]}
+                  className="mb-6 bg-blue-600 text-white hover:bg-blue-700 hover:text-white flex items-center"
                 >
-                {shipmentLoading[order.id] ? (
-                  "Processing..."
-                ) : (
-                  <>
-                  <Truck className="h-4 w-4 mr-2" />
-                  Ship Now
-                  </>
-                )}
+                  {shipmentLoading[order.id] ? (
+                    "Processing..."
+                  ) : (
+                    <>
+                      <Truck className="h-4 w-4 mr-2" />
+                      Ship Now
+                    </>
+                  )}
                 </Button>
               </div>
-              )
-            )}
-
-          
-            
-            
-            </div>
+            ))}
+        </div>
 
         {/* Order Items */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
@@ -578,6 +582,7 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
+      {showInvoice && <InvoicePreview order={order} onClose={() => setShowInvoice(false)} />}
     </div>
   );
 };

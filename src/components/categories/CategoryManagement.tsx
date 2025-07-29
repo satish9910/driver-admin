@@ -60,11 +60,18 @@ export function CategoryManagement() {
     name: "",
     description: "",
     image: null as File | null,
+    igst: "",
+    cgst: "",
+    sgst: "",
+
   });
   const [addFormData, setAddFormData] = useState({
     name: "",
     description: "",
     image: null as File | null,
+    igst: "",
+    cgst: "",
+    sgst: "",
   });
   const [imagePreview, setImagePreview] = useState("");
   const [addImagePreview, setAddImagePreview] = useState("");
@@ -116,9 +123,12 @@ export function CategoryManagement() {
   }, []);
 
   const filteredCategories = categories.filter((category) => {
+   
     const matchesSearch =
       category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       category.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      
     return matchesSearch;
   });
 
@@ -133,6 +143,9 @@ export function CategoryManagement() {
       name: category.name,
       description: category.description,
       image: null,
+      igst: category.igst || "",
+      cgst: category.cgst || "",
+      sgst: category.sgst || "",
     });
     if (category.imgUrl) {
       setImagePreview(`${import.meta.env.VITE_BASE_URL_IMG}${category.imgUrl}`);
@@ -198,6 +211,9 @@ export function CategoryManagement() {
       formData.append("id", currentCategory.id.toString());
       formData.append("name", editFormData.name);
       formData.append("description", editFormData.description);
+      formData.append("igst", editFormData.igst);
+      formData.append("cgst", editFormData.cgst);
+      formData.append("sgst", editFormData.sgst);
       if (editFormData.image) {
         formData.append("image", editFormData.image);
       }
@@ -244,6 +260,9 @@ export function CategoryManagement() {
       const formData = new FormData();
       formData.append("name", addFormData.name);
       formData.append("description", addFormData.description);
+      formData.append("igst", addFormData.igst);
+      formData.append("cgst", addFormData.cgst);
+      formData.append("sgst", addFormData.sgst);
       if (addFormData.image) {
         formData.append("image", addFormData.image);
       }
@@ -349,6 +368,58 @@ export function CategoryManagement() {
                     placeholder="Enter description"
                   />
                 </div>
+                <div className="flex space-x-4">
+                  <div>
+                    <Label htmlFor="cgst">CGST (%)</Label>
+                    <Input
+                      id="cgst"
+                      name="cgst"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="mt-4"
+                      required
+                      placeholder="Enter CGST"
+                      value={addFormData.cgst ?? ""}
+                      onChange={(e) =>
+                        setAddFormData({ ...addFormData, cgst: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sgst">SGST (%)</Label>
+                    <Input
+                      id="sgst"
+                      name="sgst"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="mt-4"
+                      required
+                      placeholder="Enter SGST"
+                      value={addFormData.sgst ?? ""}
+                      onChange={(e) =>
+                        setAddFormData({ ...addFormData, sgst: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="igst">IGST (%) <span className="text-gray-400">(optional)</span></Label>
+                    <Input
+                      id="igst"
+                      name="igst"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className="mt-4"
+                      placeholder="Enter IGST"
+                      value={addFormData.igst ?? ""}
+                      onChange={(e) =>
+                        setAddFormData({ ...addFormData, igst: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
                 <div>
                   <Label htmlFor="image">Category Image</Label>
                   <Input
@@ -400,8 +471,9 @@ export function CategoryManagement() {
                 <TableHead>Description</TableHead>
                 <TableHead>Slug</TableHead>
                 <TableHead>Image</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Updated</TableHead>
+                <TableHead>SGST</TableHead>
+                <TableHead>CGST</TableHead>
+              
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -435,8 +507,9 @@ export function CategoryManagement() {
                       />
                     )}
                   </TableCell>
-                  <TableCell>{formatDate(category.createdAt)}</TableCell>
-                  <TableCell>{formatDate(category.updatedAt)}</TableCell>
+                  <TableCell>{category.sgst}</TableCell>
+                  <TableCell>{category.cgst}</TableCell>
+                 
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -549,6 +622,55 @@ export function CategoryManagement() {
                 onChange={handleEditFormChange}
                 placeholder="Enter description"
               />
+            </div>
+            <div className="flex space-x-4">
+              <div>
+                <Label htmlFor="edit-cgst">CGST (%)</Label>
+                <Input
+                  id="edit-cgst"
+                  name="cgst"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editFormData.cgst ?? ""}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, cgst: e.target.value })
+                  }
+                  placeholder="Enter CGST"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-sgst">SGST (%)</Label>
+                <Input
+                  id="edit-sgst"
+                  name="sgst"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editFormData.sgst ?? ""}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, sgst: e.target.value })
+                  }
+                  placeholder="Enter SGST"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-igst">
+                  IGST (%) <span className="text-gray-400">(optional)</span>
+                </Label>
+                <Input
+                  id="edit-igst"
+                  name="igst"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editFormData.igst ?? ""}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, igst: e.target.value })
+                  }
+                  placeholder="Enter IGST"
+                />
+              </div>
             </div>
             <div>
               <Label htmlFor="edit-image">Category Image</Label>

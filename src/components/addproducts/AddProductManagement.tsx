@@ -5,8 +5,6 @@ import { toast } from "sonner";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
 
-
-
 const AddProductManagement = () => {
   const [product, setProduct] = useState({
     name: "",
@@ -20,34 +18,32 @@ const AddProductManagement = () => {
         sku: "",
         price: "",
         stock: "",
+        originalPrice: "",
         sellingprice: "",
         attributes: [{ key: "size", value: "" }],
       },
     ],
   });
 
-
   const modules = {
     toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean'],
-      ['link', 'image', 'video'],
-      
-    ]
+      ["bold", "italic", "underline", "strike"],
+      ["blockquote", "code-block"],
+      [{ header: 1 }, { header: 2 }],
+      [{ list: "ordered" }, { list: "bullet" }],
+      [{ script: "sub" }, { script: "super" }],
+      [{ indent: "-1" }, { indent: "+1" }],
+      [{ direction: "rtl" }],
+      [{ size: ["small", false, "large", "huge"] }],
+      [{ header: [1, 2, 3, 4, 5, 6, false] }],
+      [{ color: [] }, { background: [] }],
+      [{ font: [] }],
+      [{ align: [] }],
+      ["clean"],
+      ["link", "image", "video"],
+    ],
   };
 
- 
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -101,6 +97,56 @@ const AddProductManagement = () => {
     fetchData();
   }, []);
 
+  // calculate sgst and cgst to original price and fill in selling price and price
+
+  // console.log("mainCategories", mainCategories);
+
+  useEffect(() => {
+    if (product.variants.length > 0 && product.mainCategoryId) {
+      const selectedMainCategory = mainCategories.find(
+        (cat) => cat.id === parseInt(product.mainCategoryId)
+      );
+      const sgstRate = selectedMainCategory?.sgst || 0;
+      const cgstRate = selectedMainCategory?.cgst || 0;
+
+      const updatedVariants = product.variants.map((variant) => {
+        const originalPrice = parseFloat(variant.originalPrice) || 0;
+        const sgst = (originalPrice * (sgstRate / 100)).toFixed(2);
+        const cgst = (originalPrice * (cgstRate / 100)).toFixed(2);
+        const sgstRounded = Math.ceil(parseFloat(sgst));
+        const cgstRounded = Math.ceil(parseFloat(cgst));
+        const totalPrice = (originalPrice + sgstRounded + cgstRounded).toFixed(
+          2
+        );
+
+        // Only auto-update sellingprice if it hasn't been manually edited
+        const sellingprice = variant.isManualEdit
+          ? variant.sellingprice
+          : totalPrice;
+
+        return {
+          ...variant,
+          sgst,
+          cgst,
+          sellingprice,
+          price: totalPrice, // Always keep price updated (for reference)
+        };
+      });
+
+      const isChanged = updatedVariants.some(
+        (v, i) =>
+          v.price !== product.variants[i].price ||
+          v.sgst !== product.variants[i].sgst ||
+          v.cgst !== product.variants[i].cgst ||
+          v.sellingprice !== product.variants[i].sellingprice
+      );
+
+      if (isChanged) {
+        setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+      }
+    }
+  }, [product.variants, product.mainCategoryId, mainCategories]);
+
   useEffect(() => {
     // When main category changes, update sub categories
     if (product.mainCategoryId) {
@@ -137,9 +183,30 @@ const AddProductManagement = () => {
 
   const handleVariantChange = (variantIndex, e) => {
     const { name, value } = e.target;
-    const updatedVariants = [...product.variants];
-    updatedVariants[variantIndex][name] = value;
-    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+    setProduct((prev) => {
+      const updatedVariants = [...prev.variants];
+
+      // If sellingprice is manually changed, mark it as edited
+      if (name === "sellingprice") {
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [name]: value,
+          isManualEdit: true, // Mark as manually edited
+        };
+      } else {
+        // For other fields, reset isManualEdit if originalPrice changes
+        updatedVariants[variantIndex] = {
+          ...updatedVariants[variantIndex],
+          [name]: value,
+          isManualEdit:
+            name === "originalPrice"
+              ? false
+              : updatedVariants[variantIndex].isManualEdit,
+        };
+      }
+
+      return { ...prev, variants: updatedVariants };
+    });
   };
 
   const handleAttributeChange = (variantIndex, attrIndex, e) => {
@@ -158,6 +225,7 @@ const AddProductManagement = () => {
           sku: "",
           price: "",
           stock: "",
+          originalPrice: "",
           sellingprice: "",
           attributes: [{ key: "size", value: "" }],
         },
@@ -243,6 +311,7 @@ const AddProductManagement = () => {
             price: "",
             stock: "",
             sellingprice: "",
+            originalPrice: "",
             attributes: [{ key: "size", value: "" }],
           },
         ],
@@ -438,15 +507,12 @@ const AddProductManagement = () => {
                   Description <span className="text-red-500">*</span>
                 </label>
                 <ReactQuill
-
-                  
                   theme="snow"
                   value={product.description}
                   onChange={(value) =>
                     setProduct((prev) => ({ ...prev, description: value }))
                   }
                   modules={modules}
-                 
                   className="mt-1"
                 />
               </div>
@@ -512,10 +578,92 @@ const AddProductManagement = () => {
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
                           />
                         </div>
+
+                        <div>
+                          <label
+                            htmlFor={`stock-${variantIndex}`}
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            Stock <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            id={`stock-${variantIndex}`}
+                            name="stock"
+                            value={variant.stock}
+                            onChange={(e) =>
+                              handleVariantChange(variantIndex, e)
+                            }
+                            required
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label
+                            htmlFor={`originalPrice-${variantIndex}`}
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            Original Price{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 sm:text-sm">
+                                ₹
+                              </span>
+                            </div>
+                            <input
+                              type="number"
+                              id={`originalPrice-${variantIndex}`}
+                              name="originalPrice"
+                              value={variant.originalPrice || ""}
+                              onChange={(e) =>
+                                handleVariantChange(variantIndex, e)
+                              }
+                              required
+                              className="border border-gray-300 block w-full pl-7 pr-5 sm:text-sm rounded-md py-2 px-3"
+                              placeholder="0.00"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div>
+                          <label
+                            htmlFor={`sellingprice-${variantIndex}`}
+                            className="block text-sm font-medium text-gray-700 mt-2"
+                          >
+                            Selling Price{" "}
+                            <span className="text-red-500">*</span>
+                          </label>
+                          <div className="mt-1 relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <span className="text-gray-500 sm:text-sm">
+                                ₹
+                              </span>
+                            </div>
+                            <input
+                              type="number"
+                              id={`sellingprice-${variantIndex}`}
+                              name="sellingprice"
+                              value={variant.sellingprice}
+                              onChange={(e) =>
+                                handleVariantChange(variantIndex, e)
+                              }
+                              required
+                              className="border border-gray-300 block w-[300px] pl-7 pr-4 sm:text-sm rounded-md py-2 px-3"
+                              placeholder="0.00"
+                              min="0"
+                            />
+                          </div>
+                        </div>
+
                         <div>
                           <label
                             htmlFor={`price-${variantIndex}`}
-                            className="block text-sm font-medium text-gray-700"
+                            className="block text-sm font-medium text-gray-700 mt-2"
                           >
                             Price <span className="text-red-500">*</span>
                           </label>
@@ -537,56 +685,8 @@ const AddProductManagement = () => {
                               className="border border-gray-300 block w-full pl-7 pr-5 sm:text-sm rounded-md py-2 px-3"
                               placeholder="0.00"
                               min="0"
-                              step="0.01"
                             />
                           </div>
-                        </div>
-                        <div>
-                          <label
-                            htmlFor={`stock-${variantIndex}`}
-                            className="block text-sm font-medium text-gray-700"
-                          >
-                            Stock <span className="text-red-500">*</span>
-                          </label>
-                          <input
-                            type="number"
-                            id={`stock-${variantIndex}`}
-                            name="stock"
-                            value={variant.stock}
-                            onChange={(e) =>
-                              handleVariantChange(variantIndex, e)
-                            }
-                            required
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-gold-500 focus:border-gold-500 sm:text-sm"
-                            min="0"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <label
-                          htmlFor={`sellingprice-${variantIndex}`}
-                          className="block text-sm font-medium text-gray-700 mt-2"
-                        >
-                          Selling Price <span className="text-red-500">*</span>
-                        </label>
-                        <div className="mt-1 relative rounded-md shadow-sm">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <span className="text-gray-500 sm:text-sm">₹</span>
-                          </div>
-                          <input
-                            type="number"
-                            id={`sellingprice-${variantIndex}`}
-                            name="sellingprice"
-                            value={variant.sellingprice}
-                            onChange={(e) =>
-                              handleVariantChange(variantIndex, e)
-                            }
-                            required
-                            className="border border-gray-300 block w-[300px] pl-7 pr-4 sm:text-sm rounded-md py-2 px-3"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                          />
                         </div>
                       </div>
 

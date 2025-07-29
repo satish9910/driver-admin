@@ -44,6 +44,7 @@ import VendorRegisterPage from "./components/auth/Register";
 import VendorProfilePage from "./pages/Profile";
 import { cn } from "./lib/utils";
 import { ContactQueriesManagement } from "./pages/ContactQueriesManagement";
+import Invoice from "./components/Invoice";
 
 
 const queryClient = new QueryClient();
@@ -116,6 +117,8 @@ const adminSectionRoutes = [
   { path: "/refundpolicy", key: "refundpolicy", element: <RefundPolicy /> },
   { path: "/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
   { path: "/contact-us", key: "contactus", element: <ContactQueriesManagement /> },
+  { path: "/invoice", key: "invoice", element: <Invoice /> },
+
 ];
 
 const vendorSectionRoutes = [
