@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { toast } from "sonner";
-import ReactQuill from "react-quill";
-import "react-quill/dist/quill.snow.css";
+import JoditEditor from "jodit-react";
 
 const AddProductManagement = () => {
   const [product, setProduct] = useState({
@@ -25,23 +24,45 @@ const AddProductManagement = () => {
     ],
   });
 
-  const modules = {
-    toolbar: [
-      ["bold", "italic", "underline", "strike"],
-      ["blockquote", "code-block"],
-      [{ header: 1 }, { header: 2 }],
-      [{ list: "ordered" }, { list: "bullet" }],
-      [{ script: "sub" }, { script: "super" }],
-      [{ indent: "-1" }, { indent: "+1" }],
-      [{ direction: "rtl" }],
-      [{ size: ["small", false, "large", "huge"] }],
-      [{ header: [1, 2, 3, 4, 5, 6, false] }],
-      [{ color: [] }, { background: [] }],
-      [{ font: [] }],
-      [{ align: [] }],
-      ["clean"],
-      ["link", "image", "video"],
+  const editor = useRef(null);
+
+  // Jodit configuration
+ const joditConfig = {
+    readonly: false,
+    toolbar: true,
+    spellcheck: true,
+    language: "en",
+    toolbarButtonSize: "middle",
+    showCharsCounter: true,
+    showWordsCounter: true,
+    showXPathInStatusbar: true,
+    buttons: [
+      "source",
+      "|",
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "|",
+      "ul",
+      "ol",
+      "|",
+      "font",
+      "fontsize",
+      "brush",
+      "paragraph",
+      "|",
+      "table",
+      "link",
+      "|",
+      "align",
+      "undo",
+      "redo",
+      "|",
+      "hr",
+      "fullsize"
     ],
+    height: 400
   };
 
   const [images, setImages] = useState([]);
@@ -506,15 +527,15 @@ const AddProductManagement = () => {
                 >
                   Description <span className="text-red-500">*</span>
                 </label>
-                <ReactQuill
-                  theme="snow"
-                  value={product.description}
-                  onChange={(value) =>
-                    setProduct((prev) => ({ ...prev, description: value }))
-                  }
-                  modules={modules}
-                  className="mt-1"
-                />
+                  <JoditEditor
+                ref={editor}
+                value={product.description}
+                config={joditConfig}
+                onBlur={(newContent) =>
+                  setProduct(prev => ({ ...prev, description: newContent }))
+                }
+                className="mt-1 bg-white"
+              />
               </div>
 
               <div>

@@ -41,26 +41,46 @@
   color: #888;
 }
 
-
-/* Add basic styling for tables in the Quill editor */
-.ql-editor .ql-snow-fancy-table-container {
-  overflow-y: auto;
-  margin: 10px 0;
+/* styles/quillEditor.css */
+.ql-editor {
+  min-height: 200px;
 }
+
+/* Table styles */
 .ql-editor table {
-  width: 100%;
   border-collapse: collapse;
-  border: 1px solid #ccc;
+  width: 100%;
+  margin: 1rem 0;
+  border: 1px solid #ddd;
 }
 
-.ql-editor th,
-.ql-editor td {
-  border: 1px solid #ccc;
+.ql-editor td, .ql-editor th {
+  border: 1px solid #ddd;
   padding: 8px;
-  text-align: left;
+  min-width: 50px;
 }
 
 .ql-editor th {
   background-color: #f2f2f2;
   font-weight: bold;
+}
+
+/* Table operation menu */
+.ql-table-menu {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  padding: 4px 0;
+}
+
+.ql-table-menu-item {
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
+.ql-table-menu-item:hover {
+  background-color: #f5f5f5;
 }

@@ -71,6 +71,7 @@ const InvoicePreview = ({ order, onClose }) => {
   };
 
   // Billing and Shipping from order.address
+  
   const billingAddress = {
     name: `${order.address.firstname || ''} ${order.address.lastname || ''}`.trim() || "Customer",
     address: [

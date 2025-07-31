@@ -45,6 +45,7 @@ import VendorProfilePage from "./pages/Profile";
 import { cn } from "./lib/utils";
 import { ContactQueriesManagement } from "./pages/ContactQueriesManagement";
 import Invoice from "./components/Invoice";
+// import './App.css';
 
 
 const queryClient = new QueryClient();

@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams, useNavigate } from "react-router-dom";
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import JoditEditor from "jodit-react";
 
 const UpdateProductManagement = () => {
 
@@ -33,25 +32,45 @@ const UpdateProductManagement = () => {
     ],
   });
 
+const editor = useRef(null);
 
-    const modules = {
-    toolbar: [
-      ['bold', 'italic', 'underline', 'strike'],
-      ['blockquote', 'code-block'],
-      [{ 'header': 1 }, { 'header': 2 }],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'script': 'sub'}, { 'script': 'super' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'direction': 'rtl' }],
-      [{ 'size': ['small', false, 'large', 'huge'] }],
-      [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-      [{ 'color': [] }, { 'background': [] }],
-      [{ 'font': [] }],
-      [{ 'align': [] }],
-      ['clean'],
-      ['link', 'image', 'video'],
-      
-    ]
+  // Jodit configuration
+ const joditConfig = {
+    readonly: false,
+    toolbar: true,
+    spellcheck: true,
+    language: "en",
+    toolbarButtonSize: "middle",
+    showCharsCounter: true,
+    showWordsCounter: true,
+    showXPathInStatusbar: true,
+    buttons: [
+      "source",
+      "|",
+      "bold",
+      "italic",
+      "underline",
+      "strikethrough",
+      "|",
+      "ul",
+      "ol",
+      "|",
+      "font",
+      "fontsize",
+      "brush",
+      "paragraph",
+      "|",
+      "table",
+      "link",
+      "|",
+      "align",
+      "undo",
+      "redo",
+      "|",
+      "hr",
+      "fullsize"
+    ],
+    height: 400
   };
 
   const [images, setImages] = useState([]);
@@ -581,23 +600,23 @@ const UpdateProductManagement = () => {
                 </div>
               )}
 
-               <div>
+              <div>
                 <label
                   htmlFor="description"
                   className="block text-sm font-medium text-gray-700"
                 >
                   Description <span className="text-red-500">*</span>
                 </label>
-                <ReactQuill
-                  theme="snow"
+                <JoditEditor
+                  ref={editor}
                   value={product.description}
-                  onChange={(value) =>
-                  setProduct((prev) => ({ ...prev, description: value }))
+                  config={joditConfig}
+                  onBlur={(newContent) =>
+                    setProduct(prev => ({ ...prev, description: newContent }))
                   }
-                  className="mt-1"
-                  modules={modules}
+                  className="mt-1 bg-white"
                 />
-                </div>
+              </div>
 
               <div>
                 <div className="flex justify-between items-center mb-4">
