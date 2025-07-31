@@ -26,7 +26,8 @@ const AddProductManagement = () => {
 
   const editor = useRef(null);
 
-  // Jodit configuration
+// Jodit configuration
+
  const joditConfig = {
     readonly: false,
     toolbar: true,
