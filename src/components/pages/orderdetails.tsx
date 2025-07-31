@@ -5,6 +5,8 @@ import Cookies from "js-cookie";
 import { Button } from "../ui/button";
 import { Truck } from "lucide-react";
 import InvoicePreview from "../Invoice";
+import { toast, ToastContainer } from "react-toastify";
+
 
 interface ShipRocketResponse {
   success: boolean;
@@ -39,6 +41,19 @@ const OrderDetails = () => {
   const isAdmin = role === "admin";
   const isVendor = role === "vendor";
   const token = Cookies.get(isAdmin ? "admin_token" : "vendor_token");
+
+  const [isShipmentModalOpen, setIsShipmentModalOpen] = useState<boolean>(false);
+const [currentOrderId, setCurrentOrderId] = useState<number | null>(null);
+const [dimensions, setDimensions] = useState({
+  height: "",
+  length: "",
+  breadth: "",
+  weight: ""
+});
+const [errors, setErrors] = useState({
+  weight: false,
+  // Add others if you want to validate them too
+});
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -107,20 +122,35 @@ const OrderDetails = () => {
     }
   };
 
-  const createShipRocketOrder = async (orderId: number) => {
+  const handleShipmentSubmit = async () => {
+    // Validate required fields
+    if (!dimensions.weight) {
+      setErrors({ ...errors, weight: true });
+      return;
+    }
+
+    if (!currentOrderId) return;
+
     try {
-      setShipmentLoading((prev) => ({ ...prev, [orderId]: true }));
+      setIsShipmentModalOpen(false);
+      setShipmentLoading((prev) => ({ ...prev, [currentOrderId]: true }));
 
       const response = await fetch(
         `${
           import.meta.env.VITE_BASE_UR
-        }vendor/one-click-create-shiprocket-order/${orderId}`,
+        }vendor/one-click-create-shiprocket-order/${currentOrderId}`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          body: JSON.stringify({
+            height: dimensions.height,
+            length: dimensions.length,
+            breadth: dimensions.breadth,
+            weight: dimensions.weight,
+          }),
         }
       );
 
@@ -133,26 +163,20 @@ const OrderDetails = () => {
       const data: ShipRocketResponse = await response.json();
 
       if (data.success && data.label_url) {
-        // Open the label URL in a new tab to download
+        toast.success("ShipRocket order created successfully");
         window.open(data.label_url, "_blank");
-
         // Optionally update the order status in the UI
-        // setOrders((prevOrders) =>
-        //   prevOrders.map((order) =>
-        //     order.id === orderId
-        //       ? { ...order, status: "SHIPPED" } // Update status to shipped
-        //       : order
-        //   )
-        // );
       }
     } catch (error) {
       console.error("Error creating ShipRocket order:", error);
-      alert(`Failed to create ShipRocket order: ${error.message}`);
+      toast.error(`Failed to create ShipRocket order: ${error.message}`);
+      // alert(`Failed to create ShipRocket order: ${error.message}`);
     } finally {
-      setShipmentLoading((prev) => ({ ...prev, [orderId]: false }));
+      setShipmentLoading((prev) => ({ ...prev, [currentOrderId]: false }));
+      setDimensions({ height: "", length: "", breadth: "", weight: "" });
+      setCurrentOrderId(null);
     }
   };
-
   const handleStatusChange = (itemId, currentStatus) => {
     setSelectedItemId(itemId);
     setSelectedStatus(currentStatus);
@@ -217,6 +241,20 @@ const OrderDetails = () => {
   };
 
   return (
+    <>
+    <ToastContainer 
+      position="top-right"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="light"
+    />
+    
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
@@ -420,7 +458,10 @@ const OrderDetails = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => createShipRocketOrder(order.id)}
+                  onClick={() => {
+                    setCurrentOrderId(order.id);
+                    setIsShipmentModalOpen(true);
+                  }}
                   disabled={shipmentLoading[order.id]}
                   className="mb-6 bg-blue-600 text-white hover:bg-blue-700 hover:text-white flex items-center"
                 >
@@ -582,8 +623,111 @@ const OrderDetails = () => {
           </div>
         </div>
       </div>
-      {showInvoice && <InvoicePreview order={order} onClose={() => setShowInvoice(false)} />}
+      {showInvoice && (
+        <InvoicePreview order={order} onClose={() => setShowInvoice(false)} />
+      )}
+      {isShipmentModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md">
+            <h3 className="text-lg font-medium mb-4">Enter Package Details</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  value={dimensions.height}
+                  onChange={(e) =>
+                    setDimensions({ ...dimensions, height: e.target.value })
+                  }
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Length (cm)
+                </label>
+                <input
+                  type="number"
+                  value={dimensions.length}
+                  onChange={(e) =>
+                    setDimensions({ ...dimensions, length: e.target.value })
+                  }
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Breadth (cm)
+                </label>
+                <input
+                  type="number"
+                  value={dimensions.breadth}
+                  onChange={(e) =>
+                    setDimensions({ ...dimensions, breadth: e.target.value })
+                  }
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Weight (g)*
+                </label>
+                <input
+                  type="number"
+                  value={dimensions.weight}
+                  onChange={(e) => {
+                    setDimensions({ ...dimensions, weight: e.target.value });
+                    setErrors({ ...errors, weight: false });
+                  }}
+                  className={`mt-1 block w-full border ${
+                    errors.weight ? "border-red-500" : "border-gray-300"
+                  } rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                  required
+                />
+                {errors.weight && (
+                  <p className="mt-1 text-sm text-red-600">
+                    Weight is required
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsShipmentModalOpen(false);
+                  setDimensions({
+                    height: "",
+                    length: "",
+                    breadth: "",
+                    weight: "",
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleShipmentSubmit}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Confirm & Ship
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
+    </>
   );
 };
 
