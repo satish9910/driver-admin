@@ -435,6 +435,12 @@ const VendorProfile = () => {
                   </p>
                   </div>
                   <div>
+                  <p className="text-sm text-gray-500">Mobile</p>
+                  <p className="font-medium text-gray-800">
+                    {userData.phone || <span className="italic text-gray-400">N/A</span>}
+                  </p>
+                  </div>
+                  <div>
                   <p className="text-sm text-gray-500">User Role</p>
                   <p className="font-medium text-gray-800">{userData.role}</p>
                   </div>

@@ -28,43 +28,62 @@ const AddProductManagement = () => {
 
 // Jodit configuration
 
- const joditConfig = {
+const joditConfig = {
     readonly: false,
     toolbar: true,
     spellcheck: true,
     language: "en",
+    height: 400,
     toolbarButtonSize: "middle",
     showCharsCounter: true,
     showWordsCounter: true,
     showXPathInStatusbar: true,
+    
+    // Clipboard settings
+    clipboard: {
+        // Try different paste actions:
+        // 'insert_as_html' - keeps original HTML
+        // 'insert_clear_html' - cleans HTML
+        // 'insert_only_text' - plain text only
+        defaultActionOnPaste: 'insert_as_html',
+        
+        // Disable all paste filters temporarily for testing
+        formaters: [],
+        
+        // Allow pasting from all sources
+        allowNativePaste: true,
+        
+        // Don't ask before pasting
+        askBeforePasteFromWord: false,
+        askBeforePasteHTML: false
+    },
+    
+    // Disable clean HTML for testing
+    cleanHTML: false,
+    //    style: {
+    //     'list-style-type': 'disc', // For unordered lists
+    //     'list-style-position': 'inside'
+    // },
+    
+    // Disable all paste plugins temporarily
+    disablePlugins: ['paste', 'pasteStorage', 'clipboard'],
+    
     buttons: [
-      "source",
-      "|",
-      "bold",
-      "italic",
-      "underline",
-      "strikethrough",
-      "|",
-      "ul",
-      "ol",
-      "|",
-      "font",
-      "fontsize",
-      "brush",
-      "paragraph",
-      "|",
-      "table",
-      "link",
-      "|",
-      "align",
-      "undo",
-      "redo",
-      "|",
-      "hr",
-      "fullsize"
-    ],
-    height: 400
-  };
+        "source",
+        "|",
+        "bold", "italic", "underline", "strikethrough",
+        "|",
+        "ul", "ol",
+        "|",
+        "font", "fontsize", "brush", "paragraph",
+        "|",
+        "table", "link",
+        "|",
+        "align", "undo", "redo",
+        "|",
+        "hr", "fullsize"
+    ]
+};
 
   const [images, setImages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
