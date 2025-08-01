@@ -35,43 +35,63 @@ const UpdateProductManagement = () => {
 const editor = useRef(null);
 
   // Jodit configuration
- const joditConfig = {
+const joditConfig = {
     readonly: false,
     toolbar: true,
     spellcheck: true,
     language: "en",
+    height: 400,
     toolbarButtonSize: "middle",
     showCharsCounter: true,
     showWordsCounter: true,
     showXPathInStatusbar: true,
+    
+    // Clipboard settings
+    clipboard: {
+        // Try different paste actions:
+        // 'insert_as_html' - keeps original HTML
+        // 'insert_clear_html' - cleans HTML
+        // 'insert_only_text' - plain text only
+        defaultActionOnPaste: 'insert_as_html',
+        
+        // Disable all paste filters temporarily for testing
+        formaters: [],
+        
+        // Allow pasting from all sources
+        allowNativePaste: true,
+        
+        // Don't ask before pasting
+        askBeforePasteFromWord: false,
+        askBeforePasteHTML: false
+    },
+    
+    // Disable clean HTML for testing
+    cleanHTML: false,
+    //    style: {
+    //     'list-style-type': 'disc', // For unordered lists
+    //     'list-style-position': 'inside'
+    // },
+    
+    // Disable all paste plugins temporarily
+    disablePlugins: ['paste', 'pasteStorage', 'clipboard'],
+    
     buttons: [
-      "source",
-      "|",
-      "bold",
-      "italic",
-      "underline",
-      "strikethrough",
-      "|",
-      "ul",
-      "ol",
-      "|",
-      "font",
-      "fontsize",
-      "brush",
-      "paragraph",
-      "|",
-      "table",
-      "link",
-      "|",
-      "align",
-      "undo",
-      "redo",
-      "|",
-      "hr",
-      "fullsize"
-    ],
-    height: 400
-  };
+        "source",
+        "|",
+        "bold", "italic", "underline", "strikethrough",
+        "|",
+        "ul", "ol",
+        "|",
+        "font", "fontsize", "brush", "paragraph",
+        "|",
+        "table", "link",
+        "|",
+        "align", "undo", "redo",
+        "|",
+        "hr", "fullsize"
+    ]
+};
+
 
   const [images, setImages] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
@@ -198,51 +218,55 @@ const editor = useRef(null);
 
 
 
-     useEffect(() => {
-    if (product.variants.length > 0 && product.mainCategoryId) {
-      const selectedMainCategory = mainCategories.find(
-        (cat) => cat.id === parseInt(product.mainCategoryId)
-      );
-      const sgstRate = selectedMainCategory?.sgst || 0;
-      const cgstRate = selectedMainCategory?.cgst || 0;
+    // Only auto-update sellingprice if it hasn't been manually edited AND it's a new variant (not loaded from API)
+    useEffect(() => {
+      if (product.variants.length > 0 && product.mainCategoryId) {
+        const selectedMainCategory = mainCategories.find(
+          (cat) => cat.id === parseInt(product.mainCategoryId)
+        );
+        const sgstRate = selectedMainCategory?.sgst || 0;
+        const cgstRate = selectedMainCategory?.cgst || 0;
 
-      const updatedVariants = product.variants.map((variant) => {
-        const originalPrice = parseFloat(variant.originalPrice) || 0;
-        const sgst = (originalPrice * (sgstRate / 100)).toFixed(2);
-        const cgst = (originalPrice * (cgstRate / 100)).toFixed(2);
-        const sgstRounded = Math.ceil(parseFloat(sgst));
-        const cgstRounded = Math.ceil(parseFloat(cgst));
-        const totalPrice = (originalPrice + sgstRounded + cgstRounded).toFixed(
-          2
+        const updatedVariants = product.variants.map((variant) => {
+          const originalPrice = parseFloat(variant.originalPrice) || 0;
+          const sgst = (originalPrice * (sgstRate / 100)).toFixed(2);
+          const cgst = (originalPrice * (cgstRate / 100)).toFixed(2);
+          const sgstRounded = Math.ceil(parseFloat(sgst));
+          const cgstRounded = Math.ceil(parseFloat(cgst));
+          const totalPrice = (originalPrice + sgstRounded + cgstRounded).toFixed(2);
+
+          // Only auto-update sellingprice if it hasn't been manually edited (isManualEdit not true)
+          // If sellingprice is set from API, keep it as is unless user changes originalPrice and hasn't manually edited sellingprice
+          let sellingprice = variant.sellingprice;
+          if (
+            (!variant.isManualEdit || variant.sellingprice === "" || variant.sellingprice == null) &&
+            (!("id" in variant) || variant.sellingprice === "" || variant.sellingprice == null)
+          ) {
+            sellingprice = variant.sellingprice;
+          }
+
+          return {
+            ...variant,
+            sgst,
+            cgst,
+            price: totalPrice, // Always keep price updated
+            sellingprice,
+          };
+        });
+
+        // Only update if sgst/cgst/price changed, but don't overwrite sellingprice if manually edited
+        const isChanged = updatedVariants.some(
+          (v, i) =>
+            v.price !== product.variants[i].price ||
+            v.sgst !== product.variants[i].sgst ||
+            v.cgst !== product.variants[i].cgst
         );
 
-        // Only auto-update sellingprice if it hasn't been manually edited
-        const sellingprice = variant.isManualEdit
-          ? variant.sellingprice
-          : totalPrice;
-
-        return {
-          ...variant,
-          sgst,
-          cgst,
-          sellingprice,
-          price: totalPrice, // Always keep price updated (for reference)
-        };
-      });
-
-      const isChanged = updatedVariants.some(
-        (v, i) =>
-          v.price !== product.variants[i].price ||
-          v.sgst !== product.variants[i].sgst ||
-          v.cgst !== product.variants[i].cgst ||
-          v.sellingprice !== product.variants[i].sellingprice
-      );
-
-      if (isChanged) {
-        setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+        if (isChanged) {
+          setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+        }
       }
-    }
-  }, [product.variants, product.mainCategoryId, mainCategories]);
+    }, [product.variants, product.mainCategoryId, mainCategories]);
 
 
 
@@ -724,12 +748,6 @@ const editor = useRef(null);
                             min="0"
                           />
                         </div>
-
-
-
-
-
-
                       </div>
                          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div>

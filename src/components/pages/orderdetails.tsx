@@ -268,13 +268,13 @@ const [errors, setErrors] = useState({
             >
               {order.status}
             </span>
-            <span
+            {/* <span
               className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(
                 order.orderStatus
               )}`}
             >
               {order.orderStatus}
-            </span>
+            </span> */}
             <Button
               variant="outline"
               size="sm"
@@ -350,7 +350,7 @@ const [errors, setErrors] = useState({
             </p>
           </div>
 
-          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-2">
                 PAYMENT METHOD
@@ -361,7 +361,7 @@ const [errors, setErrors] = useState({
               </p>
             </div>
 
-            <div>
+            {/* <div>
               <h3 className="text-sm font-medium text-gray-500 mb-2">
                 ORDER TOTAL
               </h3>
@@ -370,7 +370,7 @@ const [errors, setErrors] = useState({
                 <span>GST: ₹{order.gst}</span>
                 <span>Discount: ₹{order.discount}</span>
               </div>
-            </div>
+            </div> */}
 
             <div>
               <h3 className="text-sm font-medium text-gray-500 mb-2">
@@ -390,21 +390,40 @@ const [errors, setErrors] = useState({
               Shipping Address
             </h3>
             <div className="space-y-2">
-              <p className="font-medium">{order.user.name}</p>
-              <p>
-                {order.address.houseNo}, {order.address.street}
+              <p className="font-medium">
+              {order.address.fristname} {order.address.lastname}
               </p>
               <p>
-                {order.address.city}, {order.address.district}
+              {order.address.houseNo}
               </p>
-              <p>PIN: {order.address.pincode}</p>
+              <p>
+              {order.address.street}
+              </p>
+              <p>
+              Landmark: {order.address.landmark}
+              </p>
+              <p>
+              {order.address.city}, {order.address.district}
+              </p>
+              <p>
+              State: {order.address.state}
+              </p>
+              <p>
+              Country: {order.address.country}
+              </p>
+              <p>
+              Mobile: {order.address.mobile}
+              </p>
+              <p>
+              PIN: {order.address.pincode}
+              </p>
               {order.notes && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-500">
-                    DELIVERY NOTES
-                  </p>
-                  <p className="italic">"{order.notes}"</p>
-                </div>
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-500">
+                DELIVERY NOTES
+                </p>
+                <p className="italic">"{order.notes}"</p>
+              </div>
               )}
             </div>
           </div>
@@ -494,7 +513,7 @@ const [errors, setErrors] = useState({
                         item.variant.images[0]
                       }`}
                       alt={item.variant.product.name}
-                      className="w-full h-full object-cover object-center"
+                      className="w-full h-full object-contain object-top"
                     />
                   </div>
 
@@ -516,15 +535,15 @@ const [errors, setErrors] = useState({
 
                       <div className="mt-4 md:mt-0 text-right">
                         <p className="text-gray-900 font-medium">
-                          ₹{item.price}
+                          ₹{item.variant.sellingprice}
                         </p>
                         <p className="text-sm text-gray-500">
                           Qty: {item.quantity}
                         </p>
-                        <p className="text-sm text-gray-500">
+                        {/* <p className="text-sm text-gray-500">
                           Total: ₹
                           {(parseFloat(item.price) * item.quantity).toFixed(2)}
-                        </p>
+                        </p> */}
                       </div>
                     </div>
 
@@ -582,15 +601,19 @@ const [errors, setErrors] = useState({
                 <div className="absolute w-4 h-4 bg-green-500 rounded-full mt-1.5 -left-2 border-4 border-white"></div>
                 <div className="flex flex-col sm:flex-row sm:justify-between">
                   <div>
-                    <h4 className="text-base font-medium text-gray-900">
-                      Payment Received
-                    </h4>
-                    <p className="text-sm text-gray-500">
-                      Payment successful via {order.paymentMode}
-                    </p>
+                  <h4 className="text-base font-medium text-gray-900">
+                    {order.paymentMode === "COD"
+                    ? "Pending Payment"
+                    : "Payment Received"}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {order.paymentMode === "COD"
+                    ? "Payment will be collected on delivery"
+                    : `Payment successful via ${order.paymentMode}`}
+                  </p>
                   </div>
                   <time className="text-sm text-gray-500 sm:mt-0 mt-1">
-                    {formatDate(order.createdAt)}
+                  {formatDate(order.createdAt)}
                   </time>
                 </div>
               </div>

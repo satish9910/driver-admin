@@ -402,7 +402,7 @@ export function ProductManagement() {
                   <TableCell>{product.subCategory.name}</TableCell>
                   <TableCell>{product.vendor.name}</TableCell>
                   <TableCell>{product.variants[0]?.stock || 0}</TableCell>
-                  <TableCell>₹{product.variants[0]?.price || "0.00"}</TableCell>
+                  <TableCell>₹{product.variants[0]?.sellingprice || "0.00"}</TableCell>
                   <TableCell>
                     <Badge
                       className={getStatusColor(

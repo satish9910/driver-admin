@@ -990,37 +990,37 @@ const ShopingerRegistration = () => {
   const steps = [
     {
       number: 1,
-      title: "Basic Info",
+      title: "Basic ",
       completed: currentStep > 1,
       icon: <User className="w-3 h-3" />,
     },
     {
       number: 2,
-      title: "OTP Verify",
+      title: "OTP ",
       completed: currentStep > 2,
       icon: <Smartphone className="w-3 h-3" />,
     },
     {
       number: 3,
-      title: "GST Details",
+      title: "GST ",
       completed: currentStep > 3,
       icon: <FileText className="w-3 h-3" />,
     },
     {
       number: 4,
-      title: "Pickup Address",
+      title: "Pickup ",
       completed: currentStep > 4,
       icon: <MapPin className="w-3 h-3" />,
     },
     {
       number: 5,
-      title: "Bank Details",
+      title: "Bank",
       completed: currentStep > 5,
       icon: <Banknote className="w-3 h-3" />,
     },
     {
       number: 6,
-      title: "Supplier Details",
+      title: "Supplier",
       completed: currentStep > 6,
       icon: <Building2 className="w-3 h-3" />,
     },
@@ -1042,12 +1042,14 @@ const ShopingerRegistration = () => {
     setCurrentStep(currentStep - 1);
   };
 
-  const StepIndicator = () => (
-    <div className="mb-8 w-full overflow-x-auto">
-      <div className="flex items-center justify-center min-w-max px-4">
-        {steps.map((step, index) => (
-          <div key={step.number} className="flex items-center">
-            {/* Step circle with icon/number */}
+const StepIndicator = () => (
+  <div className="mb-8 w-full overflow-x-auto">
+    <div className="flex items-start justify-center min-w-max md:min-w-full px-4 md:px-0">
+      {steps.map((step, index) => (
+        <React.Fragment key={step.number}>
+          {/* Container for a single step (icon + title) */}
+          <div className="flex flex-col items-center w-1/6 md:w-1/6">
+            {/* Step Icon */}
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 step.completed
@@ -1056,47 +1058,42 @@ const ShopingerRegistration = () => {
                   ? "bg-gray-400 text-white"
                   : "bg-gray-200 text-gray-500"
               }`}
-              title={step.title}
             >
               {step.completed ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-5 h-5" />
               ) : (
-                <div className="flex items-center justify-center">
-                  {step.icon}
-                </div>
+                step.icon
               )}
             </div>
 
-            {/* Connector line (except after last step) */}
-            {index < steps.length - 1 && (
-              <div
-                className={`w-8 h-0.5 mx-2 ${
-                  step.completed ? "bg-[#FF710B]" : "bg-gray-200"
+            {/* Step Title */}
+            <div className="mt-2 text-center">
+              <span
+                className={`text-xs break-words ${
+                  step.number === currentStep
+                    ? "font-semibold text-gray-800"
+                    : "text-gray-500"
                 }`}
-              />
-            )}
+              >
+                {step.title}
+              </span>
+            </div>
           </div>
-        ))}
-      </div>
 
-      {/* Optional: Step titles below indicators on mobile */}
-      <div className="flex justify-between px-2 mt-2 md:hidden">
-        {steps.map((step) => (
-          <div
-            key={`title-${step.number}`}
-            className={`text-xs text-center w-8 truncate ${
-              step.number === currentStep
-                ? "font-medium text-gray-800"
-                : "text-gray-500"
-            }`}
-          >
-            {step.title}
-          </div>
-        ))}
-      </div>
+          {/* Connector Line (placed between steps) */}
+          {index < steps.length - 1 && (
+            <div
+              // mt-4 vertically centers the line with the h-8 icon
+              className={`w-12 h-0.5 mt-4 ${
+                step.completed ? "bg-[#FF710B]" : "bg-gray-200"
+              }`}
+            />
+          )}
+        </React.Fragment>
+      ))}
     </div>
-  );
-
+  </div>
+);
   const renderStep = () => {
     const commonProps = {
       formData,
