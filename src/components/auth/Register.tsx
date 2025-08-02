@@ -1043,15 +1043,24 @@ const ShopingerRegistration = () => {
   };
 
 const StepIndicator = () => (
-  <div className="mb-8 w-full overflow-x-auto">
-    <div className="flex items-start justify-center min-w-max md:min-w-full px-4 md:px-0">
+  <div className="w-full overflow-x-auto px-4">
+    <div className="flex items-start justify-between min-w-max md:min-w-full mx-auto max-w-screen-lg">
       {steps.map((step, index) => (
         <React.Fragment key={step.number}>
           {/* Container for a single step (icon + title) */}
-          <div className="flex flex-col items-center w-1/6 md:w-1/6">
+          <div className="flex flex-col items-center flex-1 relative">
+            {/* Connector Line (placed before steps except first) */}
+            {index > 0 && (
+              <div
+                className={`absolute left-0 right-1/2 h-0.5 top-4 ${
+                  steps[index - 1].completed ? "bg-[#FF710B]" : "bg-gray-200"
+                }`}
+              />
+            )}
+
             {/* Step Icon */}
             <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium relative z-10 ${
                 step.completed
                   ? "bg-[#FF710B] text-white"
                   : step.number === currentStep
@@ -1067,7 +1076,7 @@ const StepIndicator = () => (
             </div>
 
             {/* Step Title */}
-            <div className="mt-2 text-center">
+            <div className="mt-2 text-center px-1">
               <span
                 className={`text-xs break-words ${
                   step.number === currentStep
@@ -1078,17 +1087,16 @@ const StepIndicator = () => (
                 {step.title}
               </span>
             </div>
-          </div>
 
-          {/* Connector Line (placed between steps) */}
-          {index < steps.length - 1 && (
-            <div
-              // mt-4 vertically centers the line with the h-8 icon
-              className={`w-12 h-0.5 mt-4 ${
-                step.completed ? "bg-[#FF710B]" : "bg-gray-200"
-              }`}
-            />
-          )}
+            {/* Connector Line (placed after steps except last) */}
+            {index < steps.length - 1 && (
+              <div
+                className={`absolute left-1/2 right-0 h-0.5 top-4 ${
+                  step.completed ? "bg-[#FF710B]" : "bg-gray-200"
+                }`}
+              />
+            )}
+          </div>
         </React.Fragment>
       ))}
     </div>
