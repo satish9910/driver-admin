@@ -1,8 +1,16 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Search,
-  Filter,
-  Plus,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Eye,
-} from "lucide-react";
+import { Search, Plus, MoreHorizontal, Edit, Trash2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import Cookies from "js-cookie";
 import { useToast } from "@/components/ui/use-toast";
@@ -39,34 +39,10 @@ import {
 
 interface Banner {
   id: number;
-  type: string;
-  imgUrl: string;
+  image: string;
   title: string;
   description: string;
-  catId: number;
-  subCatId: number;
-  status: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Category {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  imgUrl: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface SubCategory {
-  id: number;
-  mainCategoryId: number;
-  name: string;
-  slug: string;
-  description: string;
-  imgUrl: string;
+  isActive: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -74,16 +50,11 @@ interface SubCategory {
 export function BannerManagement() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<number | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<boolean | "all">("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [currentBanner, setCurrentBanner] = useState<Banner | null>(null);
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [filteredSubCategories, setFilteredSubCategories] = useState<
-    SubCategory[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const token = Cookies.get("admin_token");
@@ -92,47 +63,23 @@ export function BannerManagement() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    type: "",
-    catId: "",
-    subCatId: "",
-    status: "1",
+    isActive: "true",
     image: null as File | null,
   });
 
   useEffect(() => {
     if (token) {
       fetchBanners();
-      fetchCategories();
-      fetchSubCategories();
     } else {
       setError("You are not authorized to view this page.");
     }
   }, [token]);
 
-  useEffect(() => {
-    if (formData.catId) {
-      const filtered = subCategories.filter(
-        (subCat) => subCat.mainCategoryId === Number(formData.catId)
-      );
-      setFilteredSubCategories(filtered);
-      // Reset subCatId when category changes if the current subCatId doesn't belong to the new category
-      if (
-        formData.subCatId &&
-        !filtered.some((subCat) => subCat.id === Number(formData.subCatId))
-      ) {
-        setFormData((prev) => ({ ...prev, subCatId: "" }));
-      }
-    } else {
-      setFilteredSubCategories([]);
-      setFormData((prev) => ({ ...prev, subCatId: "" }));
-    }
-  }, [formData.catId, subCategories]);
-
   const fetchBanners = async () => {
     try {
       setLoading(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/get-all-banners`,
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_UR}admin/banners`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -140,11 +87,7 @@ export function BannerManagement() {
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch banners");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         setBanners(data.data);
       } else {
@@ -159,95 +102,28 @@ export function BannerManagement() {
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/get-all-main-categories`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories");
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setCategories(data.categories);
-      } else {
-        throw new Error(data.message || "Failed to fetch categories");
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to fetch categories",
-        variant: "destructive",
-      });
-    }
+  const getStatusText = (isActive: boolean) => {
+    return isActive ? "active" : "inactive";
   };
 
-  const fetchSubCategories = async () => {
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/get-all-sub-categories`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch subcategories");
-      }
-
-      const data = await response.json();
-      if (data.success) {
-        setSubCategories(data.subCategories);
-      } else {
-        throw new Error(data.message || "Failed to fetch subcategories");
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description:
-          err instanceof Error ? err.message : "Failed to fetch subcategories",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getStatusText = (status: number) => {
-    return status === 1 ? "active" : "inactive";
-  };
-
-  const getStatusColor = (status: number) => {
-    return status === 1
+  const getStatusColor = (isActive: boolean) => {
+    return isActive
       ? "bg-green-100 text-green-800"
       : "bg-gray-100 text-gray-800";
   };
 
   const handleDelete = async (bannerId: number) => {
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/delete-banner/${bannerId}`,
+      const response = await axios.delete(
+        `${import.meta.env.VITE_BASE_UR}admin/banners/${bannerId}`,
         {
-          method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to delete banner");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         toast({
           title: "Success",
@@ -273,10 +149,7 @@ export function BannerManagement() {
     setFormData({
       title: banner.title,
       description: banner.description,
-      type: banner.type,
-      catId: banner.catId.toString(),
-      subCatId: banner.subCatId.toString(),
-      status: banner.status.toString(),
+      isActive: banner.isActive.toString(),
       image: null,
     });
     setIsEditDialogOpen(true);
@@ -289,32 +162,23 @@ export function BannerManagement() {
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
-      formDataToSend.append("catId", formData.catId);
-      formDataToSend.append("subCatId", formData.subCatId);
-      formDataToSend.append("type", formData.type);
-      formDataToSend.append("status", formData.status);
+      formDataToSend.append("isActive", formData.isActive);
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/update-banner/${
-          currentBanner.id
-        }`,
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_UR}admin/banners/${currentBanner.id}`,
+        formDataToSend,
         {
-          method: "PUT",
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
-          body: formDataToSend,
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to update banner");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         toast({
           title: "Success",
@@ -341,30 +205,23 @@ export function BannerManagement() {
       const formDataToSend = new FormData();
       formDataToSend.append("title", formData.title);
       formDataToSend.append("description", formData.description);
-      formDataToSend.append("catId", formData.catId);
-      formDataToSend.append("subCatId", formData.subCatId);
-      formDataToSend.append("type", formData.type);
-      formDataToSend.append("status", formData.status);
+      // formDataToSend.append("isActive", formData.isActive);
       if (formData.image) {
         formDataToSend.append("image", formData.image);
       }
 
-      const response = await fetch(
+      const response = await axios.post(
         `${import.meta.env.VITE_BASE_UR}admin/add-banner`,
+        formDataToSend,
         {
-          method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
-          body: formDataToSend,
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to add banner");
-      }
-
-      const data = await response.json();
+      const data = response.data;
       if (data.success) {
         toast({
           title: "Success",
@@ -375,10 +232,7 @@ export function BannerManagement() {
         setFormData({
           title: "",
           description: "",
-          type: "",
-          catId: "",
-          subCatId: "",
-          status: "1",
+          isActive: "true",
           image: null,
         });
         fetchBanners();
@@ -413,11 +267,11 @@ export function BannerManagement() {
   };
 
   const filteredBanners = banners.filter((banner) => {
-    const matchesSearch =
-      banner.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      banner.type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = banner.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const matchesStatus =
-      statusFilter === "all" || banner.status === statusFilter;
+      statusFilter === "all" || banner.isActive === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -439,41 +293,18 @@ export function BannerManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0 ">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search banners..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-10"
-            />
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Status:{" "}
-                {statusFilter === "all" ? "All" : getStatusText(statusFilter)}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setStatusFilter("all")}>
-                All
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter(1)}>
-                Active
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter(0)}>
-                Inactive
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* Header with Search and Add Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search banners..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
         <div className="flex space-x-2">
-          {/* <Button variant="outline">Analytics</Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -487,91 +318,54 @@ export function BannerManagement() {
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="title">Banner Title</Label>
+                  <Label htmlFor="title">Banner Title*</Label>
                   <Input
                     id="title"
                     name="title"
                     placeholder="Enter banner title"
                     value={formData.title}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="type">Type</Label>
-                  <Input
-                    id="type"
-                    name="type"
-                    placeholder="Enter banner type (e.g., home)"
-                    value={formData.type}
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Description*</Label>
                   <Input
                     id="description"
                     name="description"
                     placeholder="Enter banner description"
                     value={formData.description}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div>
-                  <Label>Main Category</Label>
-                  <Select
-                    value={formData.catId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, catId: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.id.toString()}
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Subcategory</Label>
-                  <Select
-                    value={formData.subCatId}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, subCatId: value })
-                    }
-                    disabled={!formData.catId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a subcategory" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredSubCategories.map((subCat) => (
-                        <SelectItem
-                          key={subCat.id}
-                          value={subCat.id.toString()}
-                        >
-                          {subCat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="image">Banner Image</Label>
+                  <Label htmlFor="image">Banner Image*</Label>
                   <Input
                     id="image"
                     type="file"
                     accept="image/*"
                     onChange={handleFileChange}
+                    required
                   />
                 </div>
+                {/* <div>
+                  <Label>Status</Label>
+                  <Select
+                    value={formData.isActive}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, isActive: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="true">Active</SelectItem>
+                      <SelectItem value="false">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div> */}
                 <DialogFooter>
                   <Button
                     variant="outline"
@@ -587,74 +381,75 @@ export function BannerManagement() {
         </div>
       </div>
 
-      {/* Banner Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredBanners.map((banner) => (
-          <Card key={banner.id} className="hover:shadow-md transition-shadow">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <Badge className={getStatusColor(banner.status)}>
-                  {getStatusText(banner.status)}
-                </Badge>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleEditClick(banner)}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      className="text-red-600"
-                      onClick={() => handleDelete(banner.id)}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <img
-                  src={`${import.meta.env.VITE_BASE_URL_IMG}${banner.imgUrl}`}
-                  alt={banner.title}
-                  className="w-full h-32 object-cover rounded-md bg-gray-100"
-                />
-                <div>
-                  <h3 className="font-medium">{banner.title}</h3>
-                  <p className="text-sm text-gray-500">{banner.type}</p>
-                  <p className="text-sm text-gray-600 mt-1">
+      {/* Banners Table */}
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Image</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Created At</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredBanners.length > 0 ? (
+              filteredBanners.map((banner) => (
+                <TableRow key={banner.id}>
+                  <TableCell>
+                    <img
+                      src={`${import.meta.env.VITE_BASE_URL_IMG}/${banner.image}`}
+                      alt={banner.title}
+                      className="w-16 h-10 object-cover rounded"
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium">{banner.title}</TableCell>
+                  <TableCell className="max-w-xs truncate">
                     {banner.description}
-                  </p>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>
-                    Category:{" "}
-                    {categories.find((cat) => cat.id === banner.catId)?.name ||
-                      banner.catId}
-                  </span>
-                  <span>
-                    Subcategory:{" "}
-                    {subCategories.find((sub) => sub.id === banner.subCatId)
-                      ?.name || banner.subCatId}
-                  </span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  Created: {new Date(banner.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                  </TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(banner.isActive)}>
+                      {getStatusText(banner.isActive)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(banner.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditClick(banner)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDelete(banner.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  No banners found
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
 
       {/* Edit Banner Dialog */}
@@ -665,96 +460,44 @@ export function BannerManagement() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-title">Banner Title</Label>
+              <Label htmlFor="edit-title">Banner Title*</Label>
               <Input
                 id="edit-title"
                 name="title"
                 placeholder="Enter banner title"
                 value={formData.title}
                 onChange={handleInputChange}
+                required
               />
             </div>
             <div>
-              <Label htmlFor="edit-type">Type</Label>
-              <Input
-                id="edit-type"
-                name="type"
-                placeholder="Enter banner type (e.g., home)"
-                value={formData.type}
-                onChange={handleInputChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-description">Description*</Label>
               <Input
                 id="edit-description"
                 name="description"
                 placeholder="Enter banner description"
                 value={formData.description}
                 onChange={handleInputChange}
+                required
               />
             </div>
-            <div>
-              <Label>Main Category</Label>
-              <Select
-                value={formData.catId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, catId: value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category.id}
-                      value={category.id.toString()}
-                    >
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Subcategory</Label>
-              <Select
-                value={formData.subCatId}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, subCatId: value })
-                }
-                disabled={!formData.catId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a subcategory" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredSubCategories.map((subCat) => (
-                    <SelectItem key={subCat.id} value={subCat.id.toString()}>
-                      {subCat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
+            {/* <div>
               <Label>Status</Label>
               <Select
-                value={formData.status}
+                value={formData.isActive}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, status: value })
+                  setFormData({ ...formData, isActive: value })
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Active</SelectItem>
-                  <SelectItem value="0">Inactive</SelectItem>
+                  <SelectItem value="true">Active</SelectItem>
+                  <SelectItem value="false">Inactive</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
+            </div> */}
             <div>
               <Label htmlFor="edit-image">Banner Image</Label>
               <Input
@@ -767,9 +510,7 @@ export function BannerManagement() {
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">Current Image:</p>
                   <img
-                    src={`${import.meta.env.VITE_BASE_URL_IMG}${
-                      currentBanner.imgUrl
-                    }`}
+                    src={`${import.meta.env.VITE_BASE_URL_IMG}/${currentBanner.image}`}
                     alt="Current banner"
                     className="w-32 h-20 object-cover mt-1"
                   />

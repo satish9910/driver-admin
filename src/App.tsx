@@ -40,19 +40,20 @@ import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { SubSubCategoryManagement } from "./components/sub-subcategoies/SubSubCategoryManagement";
 import UpdateProductManagement from "./components/pages/UpdateProductManagement";
-import VendorRegisterPage from "./components/auth/Register";
-import VendorProfilePage from "./pages/Profile";
-import { cn } from "./lib/utils";
 import { ContactQueriesManagement } from "./pages/ContactQueriesManagement";
 import Invoice from "./components/Invoice";
 import './App.css';
-
+import { cn } from "./lib/utils";
+import { DeliveryManagement } from "./components/delivery/DeliveryManagement";
+import { PendingDelivery } from "./components/delivery/PendingDelivery";
+import PartnerProfile from "./components/pages/Partnerprofile";
+import VendorMenuPage from "./components/pages/VendorMenuPage";
 
 const queryClient = new QueryClient();
 
 // Auth components
 const AuthRoute = () => {
-  const token = Cookies.get("admin_token") || Cookies.get("vendor_token");
+  const token = Cookies.get("admin_token");
   return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
@@ -62,18 +63,13 @@ const AdminRoute = () => {
   return token && role === "admin" ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
-const VendorRoute = () => {
-  const token = Cookies.get("vendor_token");
-  const role = Cookies.get("user_role");
-  return token && role === "vendor" ? <Outlet /> : <Navigate to="/login" replace />;
-};
-
 // Section titles and routes
 const adminSectionTitles = {
-
   dashboard: { title: "Admin Dashboard", subtitle: "Overview of your eCommerce platform" },
   customers: { title: "Customer Management", subtitle: "Manage customer accounts and data" },
   vendors: { title: "Vendor Management", subtitle: "Oversee vendor applications and stores" },
+  deliveryPartners: { title: "Delivery Partners", subtitle: "Manage delivery partner applications and stores" },
+  pendingPartners: { title: "Pending Partners", subtitle: "Manage pending delivery partner applications" },
   PendingVendors: { title: "Pending Vendors", subtitle: "Manage pending vendor applications" },
   products: { title: "Product Management", subtitle: "Manage product inventory and listings" },
   addproducts: { title: "Add Product", subtitle: "Add new products to your inventory" },
@@ -86,17 +82,12 @@ const adminSectionTitles = {
   settings: { title: "Settings", subtitle: "Configure platform settings" },
 };
 
-const vendorSectionTitles = {
-  dashboard: { title: "Vendor Dashboard", subtitle: "Overview of your store" },
-  products: { title: "My Products", subtitle: "Manage your product listings" },
-  addproducts: { title: "Add Product", subtitle: "Add new products to your store" },
-  orders: { title: "My Orders", subtitle: "Track and manage your orders" },
-};
-
 const adminSectionRoutes = [
   { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
   { path: "/customers", key: "customers", element: <CustomerManagement /> },
   { path: "/vendors", key: "vendors", element: <VendorManagement /> },
+  { path: "/deliveryPartners", key: "deliveryPartners", element: <DeliveryManagement /> },
+  { path: "/pendingPartners", key: "pendingPartners", element: <PendingDelivery /> },
   { path: "/products", key: "products", element: <ProductManagement /> },
   { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
   { path: "/orders", key: "orders", element: <OrderManagement /> },
@@ -119,21 +110,10 @@ const adminSectionRoutes = [
   { path: "/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
   { path: "/contact-us", key: "contactus", element: <ContactQueriesManagement /> },
   { path: "/invoice", key: "invoice", element: <Invoice /> },
-
+  { path: "/partnerprofile/:partnerId", key: "partnerprofile", element: <PartnerProfile /> },
+  { path: "/VendorMenu/:vendorId", key: "vendorMenu", element: <VendorMenuPage /> },
 ];
 
-const vendorSectionRoutes = [
-  { path: "/vendor/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/vendor/products", key: "products", element: <ProductManagement /> },
-  { path: "/vendor/addproducts", key: "addproducts", element: <AddProductManagement /> },
-  { path: "/vendor/orders", key: "orders", element: <OrderManagement /> },
-  { path: "/vendor/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
-   { path: "/vendor/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
-  { path: "/vendor/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
-  { path: "/profile", key: "profile", element: <VendorProfilePage /> },
-];
-
-// Layout components
 // AdminLayout component
 function AdminLayout() {
   const location = useLocation();
@@ -176,47 +156,6 @@ function AdminLayout() {
   );
 }
 
-// VendorLayout component (similar changes)
-function VendorLayout() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  const activeSection = vendorSectionRoutes.find((r) => r.path === location.pathname)?.key || "dashboard";
-  const currentSection = vendorSectionTitles[activeSection] || vendorSectionTitles.dashboard;
-  
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar
-        activeSection={activeSection}
-        onSectionChange={(section) => navigate(`/vendor/${section}`)}
-        isAdmin={false}
-      />
-      <div className={cn(
-        "flex-1 flex flex-col transition-all duration-300",
-        isMobile ? "ml-0" : "ml-16 md:ml-64"
-      )}>
-        <Header
-          title={currentSection.title}
-          subtitle={currentSection.subtitle}
-        />
-        <main className="flex-1 p-4 md:p-6 mt-16">
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-}
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -225,7 +164,6 @@ const App = () => (
       <BrowserRouter basename="/admin">
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-           <Route path="/register" element={<VendorRegisterPage/>} />
           
           {/* Admin Routes */}
           <Route element={<AuthRoute />}>
@@ -235,17 +173,6 @@ const App = () => (
                   <Route key={path} path={path} element={element} />
                 ))}
                 <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-              </Route>
-            </Route>
-            
-            {/* Vendor Routes */}
-            <Route element={<VendorRoute />}>
-              <Route element={<VendorLayout />}>
-                {vendorSectionRoutes.map(({ path, element }) => (
-                  <Route key={path} path={path} element={element} />
-                ))}
-                <Route path="/vendor" element={<Navigate to="/vendor/dashboard" replace />} />
-               
               </Route>
             </Route>
           </Route>

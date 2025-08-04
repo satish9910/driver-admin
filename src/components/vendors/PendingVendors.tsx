@@ -108,15 +108,15 @@ export function PendingVendors() {
   const fetchVendors = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_UR}admin/get-all-pending-vendors`,
+        `${import.meta.env.VITE_BASE_UR}admin/get-pending-vendors`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      if (response.data.success) {
-        setVendors(response.data.vendors);
+      if (response.data) {
+        setVendors(response.data.data);
       }
     } catch (error) {
       console.error("Failed to fetch vendors:", error);
@@ -444,11 +444,11 @@ export function PendingVendors() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVendors.map((vendor) => (
+              {filteredVendors?.map((vendor) => (
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
-                  <TableCell>{vendor.shopname}</TableCell>
+                  <TableCell>{vendor.businessName}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(vendor.status)}>
                       {vendor.status}

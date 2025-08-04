@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +19,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Filter, MoreHorizontal, Eye, Mail } from "lucide-react";
+import { Search, Filter, MoreHorizontal, Eye, Mail, User } from "lucide-react";
 import Cookies from "js-cookie";
 
 export function CustomerManagement() {
@@ -31,14 +32,15 @@ export function CustomerManagement() {
     const fetchUsers = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/all-users`,
+          `${import.meta.env.VITE_BASE_UR}admin/get-all-users`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        setUsers(res.data.users);
+        console.log("Fetched users:", res.data);
+        setUsers(res.data);
       } catch (error) {
         console.error("Failed to fetch users:", error);
       }
@@ -46,6 +48,29 @@ export function CustomerManagement() {
 
     fetchUsers();
   }, []);
+
+
+  // delete user function
+  const deleteUser = async (userId: number) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      try {
+        await axios.delete(
+          `${import.meta.env.VITE_BASE_UR}admin/delete-user/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setUsers(users.filter((user) => user.id !== userId));
+        toast.success("User deleted successfully");
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        toast.error("Failed to delete user");
+      }
+    }
+  };
+
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
@@ -114,7 +139,7 @@ export function CustomerManagement() {
               <TableRow>
                 <TableHead>#</TableHead>
                 <TableHead>Name & Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Mobile</TableHead>
                 <TableHead>Join Date</TableHead>
                 <TableHead>Last Active</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -133,12 +158,12 @@ export function CustomerManagement() {
                   <TableCell>
                     <Badge
                       className={
-                        user.role === "ADMIN"
+                        user.phoneNumber === "ADMIN"
                           ? "bg-green-100 text-green-800"
                           : "bg-blue-100 text-blue-800"
                       }
                     >
-                      {user.role}
+                      {user.phoneNumber || "N/A"}
                     </Badge>
                   </TableCell>
                   <TableCell>{formatDate(user.createdAt)}</TableCell>
@@ -159,10 +184,10 @@ export function CustomerManagement() {
                           <Eye className="mr-2 h-4 w-4" />
                           View Profile
                         </DropdownMenuItem>
-                        {/* <DropdownMenuItem>
-                          <Mail className="mr-2 h-4 w-4" />
-                          Send Email
-                        </DropdownMenuItem> */}
+                        <DropdownMenuItem onClick={() => deleteUser(user.id)}>
+                          <User className="mr-2 h-4 w-4" />
+                            Delete User
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

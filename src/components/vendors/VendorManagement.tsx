@@ -107,15 +107,15 @@ export function VendorManagement() {
   const fetchVendors = async () => {
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_BASE_UR}admin/all-vendors`,
+        `${import.meta.env.VITE_BASE_UR}admin/get-all-vendors`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }
       );
-      if (response.data.success) {
-        setVendors(response.data.vendors);
+      if (response.data) {
+        setVendors(response.data.data);
       } else {
         toast({
           title: "Error",
@@ -158,7 +158,7 @@ export function VendorManagement() {
     setIsAddVendorOpen(true);
   };
 
-  const filteredVendors = vendors.filter((vendor) =>
+  const filteredVendors = vendors?.filter((vendor) =>
     vendor?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
   );
 
@@ -436,19 +436,19 @@ export function VendorManagement() {
                   <TableHead>#</TableHead>
                   <TableHead>Vendor Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Mobile</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created At</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVendors.map((vendor) => (
+                {filteredVendors?.map((vendor) => (
                   <TableRow key={vendor.id} className="hover:bg-gray-50">
-                    <TableCell>{filteredVendors.indexOf(vendor) + 1}</TableCell>
+                    <TableCell>{filteredVendors?.indexOf(vendor) + 1}</TableCell>
                     <TableCell className="font-medium">{vendor.name}</TableCell>
                     <TableCell>{vendor.email}</TableCell>
-                    <TableCell>{vendor.role}</TableCell>
+                    <TableCell>{vendor.phoneNumber}</TableCell>
                     <TableCell>
                       <Badge className={getStatusColor(vendor.status)}>
                         {vendor.status}
@@ -493,6 +493,14 @@ export function VendorManagement() {
                             >
                               <Eye className="mr-2 h-4 w-4" />
                               View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                (window.location.href = `/admin/VendorMenu/${vendor.id}`)
+                              }
+                            >
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Menu
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleEditVendor(vendor)}
