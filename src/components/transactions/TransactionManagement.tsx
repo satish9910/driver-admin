@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,11 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Search, Filter, Download, Eye } from "lucide-react";
-import Cookies from "js-cookie";
 
 interface Transaction {
   id: number;
   userId: number;
+  user?: { name: string };
   order_id: string;
   payment_id: string;
   signature: string;
@@ -35,13 +35,83 @@ interface Transaction {
 }
 
 export function TransactionManagement() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  // Static transaction data
+  const staticTransactions: Transaction[] = [
+    {
+      id: 1,
+      userId: 101,
+      user: { name: "John Doe" },
+      order_id: "ORD-123456",
+      payment_id: "PAY-789012",
+      signature: "sig-abc123",
+      amount: 2499,
+      currency: "INR",
+      product_id: 1,
+      status: "success",
+      createdAt: "2023-05-15T10:30:00Z",
+      updatedAt: "2023-05-15T10:30:00Z",
+    },
+    {
+      id: 2,
+      userId: 102,
+      user: { name: "Jane Smith" },
+      order_id: "ORD-654321",
+      payment_id: "PAY-210987",
+      signature: "sig-def456",
+      amount: 1299,
+      currency: "INR",
+      product_id: 2,
+      status: "pending",
+      createdAt: "2023-05-16T14:45:00Z",
+      updatedAt: "2023-05-16T14:45:00Z",
+    },
+    {
+      id: 3,
+      userId: 103,
+      user: { name: "Robert Johnson" },
+      order_id: "ORD-987654",
+      payment_id: "PAY-345678",
+      signature: "sig-ghi789",
+      amount: 1999,
+      currency: "INR",
+      product_id: 3,
+      status: "failed",
+      createdAt: "2023-05-17T09:15:00Z",
+      updatedAt: "2023-05-17T09:15:00Z",
+    },
+    {
+      id: 4,
+      userId: 104,
+      user: { name: "Emily Davis" },
+      order_id: "ORD-456789",
+      payment_id: "PAY-876543",
+      signature: "sig-jkl012",
+      amount: 899,
+      currency: "INR",
+      product_id: 4,
+      status: "success",
+      createdAt: "2023-05-18T16:20:00Z",
+      updatedAt: "2023-05-18T16:20:00Z",
+    },
+    {
+      id: 5,
+      userId: 105,
+      user: { name: "Michael Wilson" },
+      order_id: "ORD-321654",
+      payment_id: "PAY-543210",
+      signature: "sig-mno345",
+      amount: 1599,
+      currency: "INR",
+      product_id: 5,
+      status: "success",
+      createdAt: "2023-05-19T11:10:00Z",
+      updatedAt: "2023-05-19T11:10:00Z",
+    },
+  ];
+
+  const [transactions] = useState<Transaction[]>(staticTransactions);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const token = Cookies.get("admin_token");
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -55,39 +125,6 @@ export function TransactionManagement() {
         return "bg-gray-100 text-gray-800";
     }
   };
-
-  const fetchTransactions = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(
-        `${
-          import.meta.env.VITE_BASE_UR
-        }admin/get-all-transactions?limit=10&page=1`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch transactions");
-      }
-
-      const data = await response.json();
-      setTransactions(data.data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesSearch =
@@ -117,18 +154,6 @@ export function TransactionManagement() {
   };
 
   const { totalAmount, successCount, totalTransactions } = calculateTotals();
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        Loading transactions...
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
 
   return (
     <div className="space-y-6">
@@ -201,7 +226,7 @@ export function TransactionManagement() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        {/* <div className="flex space-x-2">
+        <div className="flex space-x-2">
           <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
@@ -210,7 +235,7 @@ export function TransactionManagement() {
             <Download className="h-4 w-4 mr-2" />
             Export PDF
           </Button>
-        </div> */}
+        </div>
       </div>
 
       {/* Transactions Table */}
@@ -229,16 +254,13 @@ export function TransactionManagement() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                {/* <TableHead>Product ID</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTransactions.map((transaction) => (
+              {filteredTransactions.map((transaction, index) => (
                 <TableRow key={transaction.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    {filteredTransactions.indexOf(transaction) + 1}
-                  </TableCell>
+                  <TableCell>{index + 1}</TableCell>
                   <TableCell>{transaction.order_id}</TableCell>
                   <TableCell>{transaction.payment_id}</TableCell>
                   <TableCell>{transaction.user?.name || "N/A"}</TableCell>
@@ -253,7 +275,6 @@ export function TransactionManagement() {
                   <TableCell>
                     {new Date(transaction.createdAt).toLocaleDateString()}
                   </TableCell>
-                  {/* <TableCell>{transaction.product_id}</TableCell> */}
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon">
                       <Eye className="h-4 w-4" />

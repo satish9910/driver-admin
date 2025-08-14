@@ -131,9 +131,9 @@ const VendorProfile = () => {
                         vendorData.status === "APPROVED" ? "bg-green-500" : 
                         vendorData.status === "REJECTED" ? "bg-red-500" : "bg-yellow-500"
                       }`}>
-                        <span className="text-white text-xs font-bold">
-                          {vendorData.status.charAt(0)}
-                        </span>
+                        {/* <span className="text-white text-xs font-bold">
+                          {vendorData?.status.charAt(0)}
+                        </span> */}
                       </div>
                     </div>
                   </div>

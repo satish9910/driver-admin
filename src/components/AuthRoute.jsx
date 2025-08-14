@@ -1,29 +1,45 @@
-// src/components/AuthRoute.jsx
 import { Navigate, Outlet } from "react-router-dom";
 import Cookies from "js-cookie";
 
 export const AuthRoute = () => {
-  const token = Cookies.get("admin_token") || Cookies.get("vendor_token");
+  const token = Cookies.get("admin_token");
   return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
-// src/components/AdminRoute.jsx
-import { Navigate, Outlet } from "react-router-dom";
-import Cookies from "js-cookie";
-
 export const AdminRoute = () => {
   const token = Cookies.get("admin_token");
-  const role = Cookies.get("user_role");
-  return token && role === "admin" ? <Outlet /> : <Navigate to="/login" replace />;
+  const userData = Cookies.get("user_data");
+  
+  if (!token) return <Navigate to="/login" replace />;
+  
+  try {
+    const user = userData ? JSON.parse(decodeURIComponent(userData)) : null;
+    if (user && (user.role === "admin" || user.role === "subadmin")) {
+      return <Outlet />;
+    }
+  } catch (e) {
+    console.error("Error parsing user data", e);
+  }
+  
+  return <Navigate to="/unauthorized" replace />;
 };
 
-// src/components/VendorRoute.jsx
-import { Navigate, Outlet } from "react-router-dom";
-import Cookies from "js-cookie";
-
-export const VendorRoute = () => {
-  const token = Cookies.get("vendor_token");
-  const role = Cookies.get("user_role");
-  return token && role === "vendor" ? <Outlet /> : <Navigate to="/login" replace />;
+export const PermissionRoute = ({ requiredPermission, children }) => {
+  const token = Cookies.get("admin_token");
+  const userData = Cookies.get("user_data");
+  
+  if (!token) return <Navigate to="/login" replace />;
+  
+  try {
+    const user = userData ? JSON.parse(decodeURIComponent(userData)) : null;
+    
+    if (user?.role === "admin") return <Outlet />;
+    if (user?.role === "subadmin" && user.permissions?.includes(requiredPermission)) {
+      return <Outlet />;
+    }
+  } catch (e) {
+    console.error("Error parsing user data", e);
+  }
+  
+  return <Navigate to="/unauthorized" replace />;
 };
-

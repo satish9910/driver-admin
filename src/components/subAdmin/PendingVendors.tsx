@@ -50,7 +50,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-// Updated form schema to include all vendor fields
+// Updated form schema to match the API response fields
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
@@ -58,15 +58,23 @@ const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email.",
   }),
-  shopname: z.string().min(2, {
-    message: "Shop name must be at least 2 characters.",
+  businessName: z.string().min(2, {
+    message: "Business name must be at least 2 characters.",
   }),
-  eid_no: z.string().optional(),
-  gst_no: z.string().optional(),
-  bank_name: z.string().optional(),
-  bank_account_no: z.string().optional(),
-  bank_ifsc: z.string().optional(),
-  role: z.string().default("VENDOR"),
+  phoneNumber: z.string().optional(),
+  phoneNumber2: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  description: z.string().optional(),
+  breakfastStart: z.string().optional(),
+  breakfastEnd: z.string().optional(),
+  lunchStart: z.string().optional(),
+  lunchEnd: z.string().optional(),
+  eveningStart: z.string().optional(),
+  eveningEnd: z.string().optional(),
+  dinnerStart: z.string().optional(),
+  dinnerEnd: z.string().optional(),
 });
 
 const getStatusColor = (status) => {
@@ -95,13 +103,21 @@ export function PendingVendors() {
     defaultValues: {
       name: "",
       email: "",
-      shopname: "",
-      eid_no: "",
-      gst_no: "",
-      bank_name: "",
-      bank_account_no: "",
-      bank_ifsc: "",
-      role: "VENDOR",
+      businessName: "",
+      phoneNumber: "",
+      phoneNumber2: "",
+      address: "",
+      city: "",
+      state: "",
+      description: "",
+      breakfastStart: "",
+      breakfastEnd: "",
+      lunchStart: "",
+      lunchEnd: "",
+      eveningStart: "",
+      eveningEnd: "",
+      dinnerStart: "",
+      dinnerEnd: "",
     },
   });
 
@@ -127,19 +143,26 @@ export function PendingVendors() {
     fetchVendors();
   }, []);
 
-  // Reset form and set current vendor when opening the dialog
   const handleEditVendor = (vendor) => {
     setCurrentVendor(vendor);
     form.reset({
-      name: vendor.name,
-      email: vendor.email,
-      shopname: vendor.shopname,
-      eid_no: vendor.eid_no || "",
-      gst_no: vendor.gst_no || "",
-      bank_name: vendor.bank_name || "",
-      bank_account_no: vendor.bank_account_no || "",
-      bank_ifsc: vendor.bank_ifsc || "",
-      role: vendor.role,
+      name: vendor.name || "",
+      email: vendor.email || "",
+      businessName: vendor.businessName || "",
+      phoneNumber: vendor.phoneNumber || "",
+      phoneNumber2: vendor.phoneNumber2 || "",
+      address: vendor.address || "",
+      city: vendor.city || "",
+      state: vendor.state || "",
+      description: vendor.description || "",
+      breakfastStart: vendor.breakfastStart || "",
+      breakfastEnd: vendor.breakfastEnd || "",
+      lunchStart: vendor.lunchStart || "",
+      lunchEnd: vendor.lunchEnd || "",
+      eveningStart: vendor.eveningStart || "",
+      eveningEnd: vendor.eveningEnd || "",
+      dinnerStart: vendor.dinnerStart || "",
+      dinnerEnd: vendor.dinnerEnd || "",
     });
     setIsAddVendorOpen(true);
   };
@@ -149,58 +172,28 @@ export function PendingVendors() {
   );
 
   const onSubmit = async (values) => {
-    console.log("Submitting vendor:", values);
     setIsLoading(true);
     try {
       const payload = {
+        ...values,
         id: currentVendor ? currentVendor.id : undefined,
-        name: values.name,
-        email: values.email,
-        shopname: values.shopname,
-        eid_no: values.eid_no,
-        gst_no: values.gst_no,
-        bank_name: values.bank_name,
-        bank_account_no: values.bank_account_no,
-        bank_ifsc: values.bank_ifsc,
-        role: values.role,
       };
 
-      let response;
-      if (currentVendor) {
-        // Update existing vendor (send JSON, not FormData)
-        response = await axios.put(
-          `${import.meta.env.VITE_BASE_UR}admin/update-vendor-details`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      } else {
-        // Create new vendor (still using FormData for registration)
-        const formData = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined) formData.append(key, value);
-        });
-        response = await axios.post(
-          `${import.meta.env.VITE_BASE_UR}public/vendor-register`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-      }
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_UR}admin/update-vendor/${currentVendor ? currentVendor.id : ""}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-      if (response.data.success) {
+      if (response.data) {
         toast({
-          title: currentVendor ? "Vendor Updated" : "Vendor Added",
-          description: currentVendor
-            ? "The vendor was updated successfully."
-            : "A new vendor was added successfully.",
+          title: "Vendor Updated",
+          description: "The vendor was updated successfully.",
         });
         await fetchVendors();
         setIsAddVendorOpen(false);
@@ -208,7 +201,7 @@ export function PendingVendors() {
         form.reset();
       }
     } catch (error) {
-      console.error("Failed to submit vendor:", error);
+      console.error("Failed to update vendor:", error);
       toast({
         title: "Error",
         description: error.response?.data?.message || "An error occurred",
@@ -220,9 +213,12 @@ export function PendingVendors() {
   };
 
   const handleDeleteVendor = async (vendorId) => {
+    if (!window.confirm("Are you sure you want to delete this vendor?")) {
+      return;
+    }
     try {
       const response = await axios.delete(
-        `${import.meta.env.VITE_BASE_UR}admin/delete-vendor/${vendorId}`,
+        `${import.meta.env.VITE_BASE_UR}admin/hard-delete-vendor/${vendorId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -230,7 +226,7 @@ export function PendingVendors() {
         }
       );
 
-      if (response.data.success) {
+      if (response.data) {
         toast({
           title: "Vendor Deleted",
           description: "The vendor was deleted successfully.",
@@ -266,28 +262,24 @@ export function PendingVendors() {
 
       {/* Edit Vendor Modal */}
       <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {currentVendor ? "Edit Vendor" : "Add New Vendor"}
-            </DialogTitle>
+            <DialogTitle>Edit Vendor</DialogTitle>
             <DialogDescription>
-              {currentVendor
-                ? "Update the vendor details below."
-                : "Fill out the form to register a new vendor."}
+              Update the vendor details below.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Column 1 */}
+                {/* Basic Information */}
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Supplier Name</FormLabel>
+                        <FormLabel>Vendor Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter vendor name" {...field} />
                         </FormControl>
@@ -295,49 +287,6 @@ export function PendingVendors() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="shopname"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Shop Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter shop name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="eid_no"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>EID Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter EID number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="gst_no"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>GST Number</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter GST number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Column 2 */}
-                <div className="space-y-4">
                   <FormField
                     control={form.control}
                     name="email"
@@ -348,7 +297,7 @@ export function PendingVendors() {
                           <Input
                             placeholder="Enter email"
                             {...field}
-                            disabled={currentVendor !== null}
+                            disabled
                           />
                         </FormControl>
                         <FormMessage />
@@ -357,12 +306,12 @@ export function PendingVendors() {
                   />
                   <FormField
                     control={form.control}
-                    name="bank_name"
+                    name="businessName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank Name</FormLabel>
+                        <FormLabel>Business Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter bank name" {...field} />
+                          <Input placeholder="Enter business name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -370,15 +319,12 @@ export function PendingVendors() {
                   />
                   <FormField
                     control={form.control}
-                    name="bank_account_no"
+                    name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank Account Number</FormLabel>
+                        <FormLabel>Phone Number</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Enter account number"
-                            {...field}
-                          />
+                          <Input placeholder="Enter phone number" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -386,17 +332,204 @@ export function PendingVendors() {
                   />
                   <FormField
                     control={form.control}
-                    name="bank_ifsc"
+                    name="phoneNumber2"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank IFSC Code</FormLabel>
+                        <FormLabel>Secondary Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter IFSC code" {...field} />
+                          <Input placeholder="Enter secondary phone" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                </div>
+
+                {/* Location Information */}
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="address"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter city" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="state"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter state" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Business Hours */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Business Hours</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Breakfast</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name="breakfastStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">Start</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="breakfastEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">End</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Lunch</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name="lunchStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">Start</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="lunchEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">End</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Evening</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name="eveningStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">Start</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="eveningEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">End</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Dinner</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name="dinnerStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">Start</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="dinnerEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="sr-only">End</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -412,13 +545,7 @@ export function PendingVendors() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading
-                    ? currentVendor
-                      ? "Updating..."
-                      : "Adding..."
-                    : currentVendor
-                    ? "Update Vendor"
-                    : "Add Vendor"}
+                  {isLoading ? "Updating..." : "Update Vendor"}
                 </Button>
               </div>
             </form>
@@ -437,9 +564,10 @@ export function PendingVendors() {
               <TableRow>
                 <TableHead>Vendor Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Shop Name</TableHead>
+                <TableHead>Mobile</TableHead>
+                <TableHead>Business Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>Join Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -448,6 +576,7 @@ export function PendingVendors() {
                 <TableRow key={vendor.id} className="hover:bg-gray-50">
                   <TableCell className="font-medium">{vendor.name}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
+                  <TableCell>{vendor.phoneNumber}</TableCell>
                   <TableCell>{vendor.businessName}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(vendor.status)}>

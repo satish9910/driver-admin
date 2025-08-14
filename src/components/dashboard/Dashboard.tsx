@@ -4,32 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  DollarSign,
   Users,
   Package,
   ShoppingCart,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
   UserCheck,
-  List,
-  Layers,
   IndianRupee,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 
-interface DashboardStats {
-  products: number;
-  orders: number;
-  users: number;
-  pendingVendors: number;
-  approvedVendors: number;
-  categories: number;
-  subCategories: number;
-  last5Orders: any[];
-  last5MonthSales: any[];
+interface DashboardData {
+  totalUsers: number;
+  totalBookings: number;
+  totalSubAdmins: number;
+  totalTransactions: number;
 }
 
 interface Notification {
@@ -41,25 +30,19 @@ interface Notification {
 }
 
 export function Dashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const  role = Cookies.get("user_role");
-  console.log("User Role:", role);
+  const role = Cookies.get("user_role");
   
-
   const token = role === "admin" ? Cookies.get("admin_token") : Cookies.get("vendor_token");
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
+    const fetchDashboardData = async () => {
       try {
         const baseUrl = import.meta.env.VITE_BASE_UR;
-        const endpoint = role === "admin" 
-          ? "admin/dashboard-stats" 
-          : "vendor/dashboard-stats";
-        
         const response = await axios.get(
-          `${baseUrl}${endpoint}`,
+          `${baseUrl}admin/dashboard`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -68,10 +51,10 @@ export function Dashboard() {
           }
         );
 
-        if (response.data.success) {
-          setStats(role === "admin" ? response.data.data : response.data.stats);
+        if (response.data) {
+          setData(response.data);
         } else {
-          setError("Failed to fetch dashboard stats");
+          setError("Failed to fetch dashboard data");
         }
       } catch (err) {
         setError("Error fetching dashboard data");
@@ -81,42 +64,29 @@ export function Dashboard() {
       }
     };
 
-    fetchDashboardStats();
+    fetchDashboardData();
+  }, [role, token]);
 
-  }, [role]);
-  
-
-  // Generate notifications based on stats
   const generateNotifications = (): Notification[] => {
-    if (!stats) return [];
+    if (!data) return [];
 
     const notifications: Notification[] = [];
 
-    if (stats.pendingVendors > 0) {
+    if (data.totalBookings === 0) {
       notifications.push({
         id: 1,
-        type: "vendor",
-        message: `${stats.pendingVendors} vendor applications pending approval`,
+        type: "order",
+        message: "No bookings yet",
         time: "Just now",
-        urgent: true,
+        urgent: false,
       });
     }
 
-    if (stats.orders > 0) {
+    if (data.totalUsers === 0) {
       notifications.push({
         id: 2,
-        type: "order",
-        message: `${stats.orders} orders need processing`,
-        time: "Today",
-        urgent: stats.orders > 5,
-      });
-    }
-
-    if (stats.products < 10) {
-      notifications.push({
-        id: 3,
-        type: "product",
-        message: "Low product count - consider adding more",
+        type: "user",
+        message: "No users registered yet",
         time: "Today",
         urgent: true,
       });
@@ -164,7 +134,7 @@ export function Dashboard() {
     );
   }
 
-  if (!stats) {
+  if (!data) {
     return (
       <div className="ml-64 mt-14 flex items-center justify-center h-screen">
         <div className="text-center">
@@ -174,173 +144,119 @@ export function Dashboard() {
     );
   }
 
-  // If vendor, show vendor-specific stats
-  let dashboardStats;
-  if (role === "vendor" && stats && (stats as any).totalProducts !== undefined) {
-    dashboardStats = [
-      {
-        title: "Total Products",
-        value: (stats as any).totalProducts?.toString() ?? "0",
-        changeType: "neutral" as const,
-        icon: Package,
-        iconColor: "text-purple-600",
-      },
-      {
-        title: "Total Orders",
-        value: (stats as any).totalOrders?.toString() ?? "0",
-        changeType: "positive" as const,
-        icon: ShoppingCart,
-        iconColor: "text-orange-600",
-      },
-      {
-        title: "Total Revenue",
-        value: `₹${(stats as any).totalRevenue ?? 0}`,
-        changeType: "positive" as const,
-        icon: IndianRupee,
-        iconColor: "text-green-600",
-      },
-      {
-        title: "Items Sold",
-        value: (stats as any).totalItemsSold?.toString() ?? "0",
-        changeType: "positive" as const,
-        icon: Layers,
-        iconColor: "text-blue-600",
-      },
-    ];
-  } else {
-    dashboardStats = [
-      {
-        title: "Total Revenue",
-        value: `₹${stats.last5MonthSales?.reduce(
-          (total, month) => total + month.totalSales,
-          0
-        )}`,
-        change: `${stats.last5MonthSales.length} months of sales data`,
-        changeType: "positive" as const,
-        icon: IndianRupee,
-        iconColor: "text-green-600",
-      },
-      {
-        title: "Active Users",
-        value: stats.users.toString(),
-        change: `${stats.approvedVendors} approved vendors`,
-        changeType: "positive" as const,
-        icon: Users,
-        iconColor: "text-blue-600",
-      },
-      {
-        title: "Total Products",
-        value: stats.products.toString(),
-        changeType: "neutral" as const,
-        icon: Package,
-        iconColor: "text-purple-600",
-      },
-      {
-        title: "Total Orders",
-        value: stats.orders.toString(),
-        change: `${stats.pendingVendors} vendors pending approval`,
-        changeType: stats.pendingVendors > 0 ? "negative" : "positive",
-        icon: ShoppingCart,
-        iconColor: "text-orange-600",
-      },
-    ];
-  }
+  const dashboardStats = [
+    {
+      title: "Total Revenue",
+      value: `₹${data.totalTransactions}`,
+      change: `${data.totalBookings} total bookings`,
+      changeType: "positive" as const,
+      icon: IndianRupee,
+      iconColor: "text-green-600",
+    },
+    {
+      title: "Total Users",
+      value: data.totalUsers.toString(),
+      change: `${data.totalSubAdmins} sub-admins`,
+      changeType: "positive" as const,
+      icon: Users,
+      iconColor: "text-blue-600",
+    },
+    {
+      title: "Total Bookings",
+      value: data.totalBookings.toString(),
+      changeType: data.totalBookings > 0 ? "positive" : "neutral",
+      icon: ShoppingCart,
+      iconColor: "text-orange-600",
+    },
+    {
+      title: "Sub-Admins",
+      value: data.totalSubAdmins.toString(),
+      changeType: "neutral" as const,
+      icon: UserCheck,
+      iconColor: "text-purple-600",
+    },
+  ];
 
   return (
-    <div className="space-y-6  p-6">
+    <div className="space-y-6 p-6">
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-4">
         {dashboardStats.map((stat, index) => (
           <StatsCard key={index} {...stat} />
         ))}
       </div>
+
+      {/* Additional Cards */}
       {role === "admin" && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Vendors</CardTitle>
-          <UserCheck className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.approvedVendors}</div>
-          <p className="text-xs text-muted-foreground">
-            {stats.pendingVendors} pending approval
-          </p>
-        </CardContent>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">User Statistics</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between py-1">
+                <span className="text-sm">Total Users</span>
+                <span className="font-medium">{data.totalUsers}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-sm">Sub-Admins</span>
+                <span className="font-medium">{data.totalSubAdmins}</span>
+              </div>
+            </CardContent>
           </Card>
+
           <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Categories</CardTitle>
-          <List className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.categories}</div>
-          <p className="text-xs text-muted-foreground">
-            {stats.subCategories} sub-categories
-          </p>
-        </CardContent>
-          </Card>
-          <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Latest Order</CardTitle>
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {stats.last5Orders.length > 0
-          ? `${stats.last5Orders[0].id}`
-          : "N/A"}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {stats.last5Orders.length > 0
-          ? `₹${stats.last5Orders[0].totalAmount}`
-          : "No orders"}
-          </p>
-        </CardContent>
-          </Card>
-          <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Latest Month</CardTitle>
-          <Layers className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {stats.last5MonthSales.length > 0
-          ? `₹${stats.last5MonthSales[0].totalSales}`
-          : "N/A"}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {stats.last5MonthSales.length > 0
-          ? new Date(stats.last5MonthSales[0].month).toLocaleString(
-              "default",
-              { month: "long", year: "numeric" }
-            )
-          : "No data"}
-          </p>
-        </CardContent>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Booking Statistics</CardTitle>
+              <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between py-1">
+                <span className="text-sm">Total Bookings</span>
+                <span className="font-medium">{data.totalBookings}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-sm">Total Revenue</span>
+                <span className="font-medium">₹{data.totalTransactions}</span>
+              </div>
+            </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Content Grid */}
-      {/* Show Recent Orders only for ADMIN */}
-      {role === "admin" && (
-        <div className="">
-          {/* Recent Orders */}
-          <div >
-        <Card>
-          <CardHeader>
-            {/* <CardTitle>Recent Orders</CardTitle> */}
-          </CardHeader>
-          <CardContent>
-            <RecentOrders last5Orders={stats.last5Orders} />
-          </CardContent>
-        </Card>
+      {/* Notifications */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Notifications</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`flex items-start pb-4 last:pb-0 ${
+                  notification.urgent ? "border-l-4 border-red-500 pl-4" : "pl-2"
+                }`}
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-medium leading-none">
+                    {notification.message}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {notification.time}
+                  </p>
+                </div>
+                {notification.urgent && (
+                  <Badge variant="destructive" className="ml-auto">
+                    Alert
+                  </Badge>
+                )}
+              </div>
+            ))}
           </div>
-        </div>
-      )}
-
-    
+        </CardContent>
+      </Card>
     </div>
   );
 }

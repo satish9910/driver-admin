@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import Cookies from "js-cookie";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Car, Eye, EyeOff } from "lucide-react";
 import { toast, Toaster } from "sonner";
 import axios from "axios";
 
@@ -78,7 +78,7 @@ const LoginPage = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <img src="logo.png" alt="Company Logo" className="mx-auto h-12 w-auto mb-2" />
+            <Car className="h-12 w-12 mx-auto text-gray-500" />
             <p className="text-gray-600">Sign in to your admin account</p>
           </div>
 
@@ -146,7 +146,7 @@ const LoginPage = () => {
           </Card>
 
           <div className="mt-8 text-center text-sm text-gray-500">
-            <p>© {new Date().getFullYear()} RootMit. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} Drivero. All rights reserved.</p>
           </div>
         </div>
       </div>

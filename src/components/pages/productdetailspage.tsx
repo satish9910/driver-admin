@@ -6,7 +6,7 @@ import { Sidebar } from "../layout/Sidebar";
 
 const ProductdetailsPage = () => {
   const { productId } = useParams();
-  const [product, setProduct] = useState(null);
+  const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -27,7 +27,7 @@ const ProductdetailsPage = () => {
         };
 
         if (isAdmin) {
-          url = `${import.meta.env.VITE_BASE_UR}admin/get-product/${productId}`;
+          url = `${import.meta.env.VITE_BASE_UR}admin/get-meal-by-id/${productId}`;
         } else if (isVendor) {
           url = `${import.meta.env.VITE_BASE_UR}vendor/get-product/${productId}`;
         }
@@ -69,55 +69,50 @@ const ProductdetailsPage = () => {
       </div>
     );
 
-  const variant = product.variants[0];
-  const price = parseFloat(variant.price);
-
   const increaseQuantity = () => setQuantity((prev) => prev + 1);
   const decreaseQuantity = () =>
     setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
+  // Get all images including the main image
+  const allImages = [
+    product.image,
+    ...product.mealImages.map((img: any) => img.url)
+  ];
+
+  // Format day names
+  const formatDay = (dayCode: string) => {
+    const days: Record<string, string> = {
+      MON: "Monday",
+      TUE: "Tuesday",
+      WED: "Wednesday",
+      THU: "Thursday",
+      FRI: "Friday",
+      SAT: "Saturday",
+      SUN: "Sunday"
+    };
+    return days[dayCode] || dayCode;
+  };
+
   return (
-    <div className="min-h-screen max-w-6xl bg-white text-gray-900  ">
-      {/* Header */}
-      {/* <Header title="Product Details" /> */}
-
+    <div className="min-h-screen max-w-6xl bg-white text-gray-900 mx-auto">
       <div className="flex">
-        {/* Sidebar */}
-        {/* <Sidebar
-          activeSection="products"
-          onSectionChange={(section) =>
-            console.log(`Section changed to: ${section}`)
-          }
-        /> */}
-
-        {/* Main Content */}
         <main className="flex-1 container mx-auto px-6 py-12">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold">Product Details</h1>
-            {/* <button
-              onClick={() =>
-                (window.location.href = `/edit-product/${productId}`)
-              }
-              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300"
-            >
-              Edit
-            </button> */}
+            <h1 className="text-2xl font-bold">Meal Details</h1>
           </div>
 
           <div className="flex flex-col lg:flex-row">
-            {/* Product Images */}
+            {/* Meal Images */}
             <div className="lg:w-1/2 mb-10 lg:mb-0">
               <div className="bg-gray-50 p-8 flex items-center justify-center h-96 mb-4">
                 <img
-                  src={`${import.meta.env.VITE_BASE_URL_IMG}${
-                    variant.images[selectedImage]
-                  }`}
-                  alt={product.name}
+                  src={`${import.meta.env.VITE_BASE_URL_IMG}${allImages[selectedImage]}`}
+                  alt={product.title}
                   className="max-h-full max-w-full object-contain"
                 />
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {variant.images.map((image, index) => (
+                {allImages.map((image: string, index: number) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
@@ -127,7 +122,7 @@ const ProductdetailsPage = () => {
                   >
                     <img
                       src={`${import.meta.env.VITE_BASE_URL_IMG}${image}`}
-                      alt={`${product.name} thumbnail ${index}`}
+                      alt={`${product.title} thumbnail ${index}`}
                       className="max-h-full max-w-full object-contain"
                     />
                   </button>
@@ -135,14 +130,14 @@ const ProductdetailsPage = () => {
               </div>
             </div>
 
-            {/* Product Info */}
+            {/* Meal Info */}
             <div className="lg:w-1/2 lg:pl-16">
               <div className="mb-6">
                 <span className="text-sm text-gray-500 uppercase tracking-wider">
-                  {product.mainCategory.name}
+                  {product.type} • {product.cuisine}
                 </span>
                 <h1 className="text-3xl font-serif font-light mt-2 mb-4">
-                  {product.name}
+                  {product.title}
                 </h1>
                 <div className="flex items-center mb-6">
                   <div className="flex">
@@ -165,9 +160,9 @@ const ProductdetailsPage = () => {
               </div>
 
               <div className="mb-8">
-                <span className="text-2xl font-serif">₹{price.toFixed(2)}</span>
+                <span className="text-2xl font-serif">₹{product.basePrice.toFixed(2)}</span>
                 <div className="mt-2 text-sm text-gray-500">
-                  Inclusive of all taxes
+                  {product.isVeg ? "Vegetarian" : "Non-Vegetarian"} • {product.energyKcal} kcal
                 </div>
               </div>
 
@@ -179,14 +174,64 @@ const ProductdetailsPage = () => {
               </div>
 
               <div className="mb-8">
-                <h2 className="text-lg font-medium mb-4">Key Benefits</h2>
-                <ul className="list-disc pl-5 text-gray-700 space-y-2">
-                  <li>Reduces dark spots and evens out skin tone</li>
-                  <li>Boosts hydration with Hyaluronic Acid</li>
-                  <li>Dermatologist-approved formula</li>
-                  <li>Lightweight and fast-absorbing</li>
-                  <li>Suitable for daily use</li>
+                <h2 className="text-lg font-medium mb-4">Nutritional Information</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-gray-500 text-sm">Protein</div>
+                    <div className="font-medium">{product.proteinGram}g</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-gray-500 text-sm">Carbs</div>
+                    <div className="font-medium">{product.carbsGram}g</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-gray-500 text-sm">Fat</div>
+                    <div className="font-medium">{product.fatGram}g</div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded">
+                    <div className="text-gray-500 text-sm">Fiber</div>
+                    <div className="font-medium">{product.fiberGram}g</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-lg font-medium mb-4">Ingredients</h2>
+                <ul className="list-disc pl-5 text-gray-700 space-y-1">
+                  {product.ingredients.map((ingredient: any) => (
+                    <li key={ingredient.id}>{ingredient.name}</li>
+                  ))}
                 </ul>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-lg font-medium mb-4">Dietary Tags</h2>
+                <div className="flex flex-wrap gap-2">
+                  {product.dietaryTags.map((tag: any) => (
+                    <span key={tag.id} className="bg-gray-100 px-3 py-1 rounded-full text-sm">
+                      {tag.tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-lg font-medium mb-4">Available Days</h2>
+                <div className="flex flex-wrap gap-2">
+                  {product.availableDays.map((day: any) => (
+                    <span key={day.id} className="bg-gray-100 px-3 py-1 rounded-full text-sm">
+                      {formatDay(day.day)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-8">
+                <h2 className="text-lg font-medium mb-4">Vendor Information</h2>
+                <div className="bg-gray-50 p-4 rounded">
+                  <div className="font-medium">{product.vendor.businessName}</div>
+                  <div className="text-gray-600">By {product.vendor.name}</div>
+                </div>
               </div>
             </div>
           </div>

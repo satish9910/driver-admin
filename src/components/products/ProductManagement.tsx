@@ -3,8 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import * as Switch from "@radix-ui/react-switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
-
+import axios from "axios";
 import {
   Table,
   TableBody,
@@ -36,43 +38,48 @@ import {
   Eye,
   ChevronLeft,
   ChevronRight,
+  Check,
+  X,
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
 import Cookies from "js-cookie";
 
-interface Product {
+interface Meal {
   id: number;
-  name: string;
+  title: string;
   description: string;
-  mainCategory: {
-    name: string;
-  };
-  subCategory: {
-    name: string;
-  };
+  type: string;
+  cuisine: string;
+  isVeg: boolean;
+  basePrice: number;
+  isAvailable: boolean;
+  isWeekly: boolean;
+  isVerified: boolean;
+  image: string | null;
   vendor: {
     name: string;
+    businessName: string;
   };
-  variants: {
-    price: string;
-    stock: number;
-    images: string[];
-    attributes: {
-      key: string;
-      value: string;
-    }[];
+  mealImages: {
+    url: string;
+  }[];
+  dietaryTags: {
+    tag: string;
+  }[];
+  availableDays: {
+    day: string;
   }[];
   createdAt: string;
   updatedAt: string;
 }
 
-export function ProductManagement() {
+export function MealManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,17 +89,7 @@ export function ProductManagement() {
 
   const navigate = useNavigate();
 
-  const handleDetailClick = (productId: number) => {
-    if (isAdmin) {
-      navigate(`/productdetails/${productId}`);
-    } else if (isVendor) {
-      navigate(`/vendor/productdetails/${productId}`);
-    }
-  }
-
-  console.log("Role:", role);
-
-  const productsPerPage = 10;
+  const mealsPerPage = 10;
 
   // Get the appropriate token based on role
   const token = isAdmin
@@ -100,21 +97,18 @@ export function ProductManagement() {
     : Cookies.get("vendor_token");
 
   useEffect(() => {
-    fetchProducts();
+    fetchMeals();
   }, []);
 
-  const fetchProducts = async () => {
+  const fetchMeals = async () => {
     try {
       setLoading(true);
 
-      let apiUrl = "";
-      if (isAdmin) {
-        apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-products`;
-      } else if (isVendor) {
-        apiUrl = `${import.meta.env.VITE_BASE_UR}vendor/get-my-products`;
-      } else {
+      if (!isAdmin) {
         throw new Error("Unauthorized access");
       }
+
+      const apiUrl = `${import.meta.env.VITE_BASE_UR}admin/get-all-meals`;
 
       const response = await fetch(apiUrl, {
         headers: {
@@ -123,24 +117,31 @@ export function ProductManagement() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch products");
+        throw new Error("Failed to fetch meals");
       }
 
       const data = await response.json();
-      setProducts(data.data);
-    } catch (err) {
+      setMeals(data.meals || []);
+    } catch (err: any) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDeleteProduct = async (productId: number) => {
-    // Only admin should be able to delete products
+  const handleDetailClick = (mealId: number) => {
+    if (isAdmin) {
+      navigate(`/mealdetails/${mealId}`);
+    } else if (isVendor) {
+      navigate(`/vendor/mealdetails/${mealId}`);
+    }
+  };
+
+  const handleDeleteMeal = async (mealId: number) => {
     if (!isAdmin) {
       toast({
         title: "Permission Denied",
-        description: "You don't have permission to delete products",
+        description: "You don't have permission to delete meals",
         variant: "destructive",
       });
       return;
@@ -148,27 +149,19 @@ export function ProductManagement() {
 
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/soft-delete-product/${productId}`,
+        `${import.meta.env.VITE_BASE_UR}admin/delete-meal/${mealId}`,
         {
           method: "DELETE",
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
             Authorization: `Bearer ${token}`,
           },
-          body: new URLSearchParams({
-            houseNo: "222",
-            street: "straeet 2",
-            city: "New Delhi",
-            district: "New Delhi",
-            pincode: "110075",
-          }),
         }
       );
 
       const data = await response.json();
 
       if (!response.ok || data.status === false) {
-        const errorMsg =  data?.message || "Failed to delete product";
+        const errorMsg = data?.message || "Failed to delete meal";
         toast({
           title: "Delete Failed",
           description: errorMsg,
@@ -178,12 +171,11 @@ export function ProductManagement() {
       }
 
       toast({
-        title: "Product Deleted",
-        description: "The product was deleted successfully.",
+        title: "Meal Deleted",
+        description: "The meal was deleted successfully.",
       });
 
-      // Refresh the product list after successful deletion
-      await fetchProducts();
+      await fetchMeals();
     } catch (err: any) {
       toast({
         title: "Error",
@@ -192,63 +184,265 @@ export function ProductManagement() {
       });
     }
   };
-  const getStatusColor = (stock: number) => {
-    if (stock > 0) {
-      return "bg-green-100 text-green-800";
-    } else {
-      return "bg-red-100 text-red-800";
+
+  const handleVerifyMeal = async (mealId: number) => {
+    if (!isAdmin) {
+      toast({
+        title: "Permission Denied",
+        description: "You don't have permission to verify meals",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_UR}admin/verify-vendor-meal/${mealId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.status === false) {
+        const errorMsg = data?.message || "Failed to verify meal";
+        toast({
+          title: "Verification Failed",
+          description: errorMsg,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Meal Verified",
+        description: "The meal was verified successfully.",
+      });
+
+      await fetchMeals();
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err?.message || "An unexpected error occurred",
+        variant: "destructive",
+      });
     }
   };
 
-  const getStatusText = (stock: number) => {
-    return stock > 0 ? "In Stock" : "Out of Stock";
+  const ToggleDeleteUser = async (userId: number) => {
+    if (window.confirm("Are you sure you want to soft delete this user?")) {
+      try {
+        await axios.patch(
+          `${import.meta.env.VITE_BASE_UR}admin/toggle-meal-availability/${userId}`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        toast({
+          title: "User Soft Deleted",
+          description: "The user was soft deleted successfully.",
+        });
+        await fetchMeals();
+      } catch (error) {
+        console.error("Failed to soft delete user:", error);
+        toast({
+          title: "Delete Failed",
+          description: "An error occurred while trying to delete the user.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
-  const filteredProducts = products.filter((product) => {
+  const getStatusColor = (isAvailable: boolean) => {
+    return isAvailable
+      ? "bg-green-100 text-green-800"
+      : "bg-red-100 text-red-800";
+  };
+
+  const getStatusText = (isAvailable: boolean) => {
+    return isAvailable ? "Available" : "Unavailable";
+  };
+
+  const getVegNonVegColor = (isVeg: boolean) => {
+    return isVeg ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800";
+  };
+
+  const getVegNonVegText = (isVeg: boolean) => {
+    return isVeg ? "Veg" : "Non-Veg";
+  };
+
+  const filteredMeals = meals.filter((meal) => {
     const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
+      meal.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      meal.vendor.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       statusFilter === "all" ||
-      (statusFilter === "in_stock" && product.variants[0].stock > 0) ||
-      (statusFilter === "out_of_stock" && product.variants[0].stock <= 0);
-    const matchesCategory =
-      categoryFilter === "all" || product.mainCategory.name === categoryFilter;
-    return matchesSearch && matchesStatus && matchesCategory;
+      (statusFilter === "available" && meal.isAvailable) ||
+      (statusFilter === "unavailable" && !meal.isAvailable);
+    const matchesType = typeFilter === "all" || meal.type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
-  // Get current products
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(
-    indexOfFirstProduct,
-    indexOfLastProduct
+  // Split meals into verified and unverified
+  const verifiedMeals = filteredMeals.filter((meal) => meal.isVerified);
+  const unverifiedMeals = filteredMeals.filter((meal) => !meal.isVerified);
+
+  // Get current meals for the active tab
+  const activeTabMeals = (tab: string) =>
+    tab === "verified" ? verifiedMeals : unverifiedMeals;
+  const currentMeals = activeTabMeals("verified").slice(
+    (currentPage - 1) * mealsPerPage,
+    currentPage * mealsPerPage
+  );
+  const currentUnverifiedMeals = activeTabMeals("unverified").slice(
+    (currentPage - 1) * mealsPerPage,
+    currentPage * mealsPerPage
   );
 
-  // Change page
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-  const nextPage = () => {
-    if (currentPage < Math.ceil(filteredProducts.length / productsPerPage)) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-  const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const categories = [...new Set(products.map((p) => p.mainCategory.name))];
-  const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const totalPages = (tab: string) =>
+    Math.ceil(activeTabMeals(tab).length / mealsPerPage);
+  const types = [...new Set(meals.map((m) => m.type))];
 
   if (loading) {
-    return <div>Loading products...</div>;
+    return <div>Loading meals...</div>;
   }
 
-  // if (error) {
-  //   return <div>Error: {error}</div>;
-  // }
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
+  const renderMealTable = (mealsToRender: Meal[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>#</TableHead>
+          <TableHead>Meal</TableHead>
+          <TableHead>Type</TableHead>
+          <TableHead>Cuisine</TableHead>
+          <TableHead>Vendor</TableHead>
+          <TableHead>Price</TableHead>
+          <TableHead>Veg/Non-Veg</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {mealsToRender.map((meal) => (
+          <TableRow key={meal.id} className="hover:bg-gray-50">
+            <TableCell>{filteredMeals.indexOf(meal) + 1}</TableCell>
+            <TableCell>
+              <div className="flex items-center space-x-3">
+                {(meal.image || meal.mealImages?.[0]?.url) && (
+                  <img
+                    src={`${import.meta.env.VITE_BASE_URL_IMG}${
+                      meal.image || meal.mealImages[0].url
+                    }`}
+                    alt={meal.title}
+                    className="w-10 h-10 rounded-md object-cover bg-gray-100"
+                  />
+                )}
+                <div>
+                  <div className="font-medium">{meal.title}</div>
+                  <div className="text-sm text-gray-500 line-clamp-1">
+                    {meal.description}
+                  </div>
+                </div>
+              </div>
+            </TableCell>
+            <TableCell>{meal.type}</TableCell>
+            <TableCell>{meal.cuisine}</TableCell>
+            <TableCell>{meal.vendor.businessName}</TableCell>
+            <TableCell>₹{meal.basePrice || "0.00"}</TableCell>
+            <TableCell>
+              <Badge className={getVegNonVegColor(meal.isVeg)}>
+                {getVegNonVegText(meal.isVeg)}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Badge className={getStatusColor(meal.isAvailable)}>
+                {getStatusText(meal.isAvailable)}
+              </Badge>
+
+              <div className="mt-2">
+                <div className="flex items-center space-x-3">
+                  <Switch.Root
+                    checked={meal.isAvailable}
+                    onCheckedChange={() => ToggleDeleteUser(meal.id)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      meal.isAvailable ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                  >
+                    <Switch.Thumb
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                        meal.isAvailable ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </Switch.Root>
+
+                  <span
+                    className={`text-xs ${
+                      meal.isAvailable ? "text-green-600" : "text-gray-600"
+                    }`}
+                  >
+                    {meal.isAvailable ? "Available" : "Unavailable"}
+                  </span>
+                </div>
+              </div>
+            </TableCell>
+
+            <TableCell className="text-right">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleDetailClick(meal.id)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </DropdownMenuItem>
+                  { isAdmin && (
+                    <DropdownMenuItem onClick={() => handleVerifyMeal(meal.id)}>
+                      <Check className="mr-2 h-4 w-4 text-green-600" />
+                      Verify
+                    </DropdownMenuItem>
+                  )}
+                  {/* <DropdownMenuItem
+                    onClick={() =>
+                      navigate(
+                        isAdmin
+                          ? `/meal-update/${meal.id}`
+                          : `/vendor/meal-update/${meal.id}`
+                      )
+                    }
+                  >
+                    <Edit className="mr-2 h-4 w-4" />
+                    Edit
+                  </DropdownMenuItem> */}
+                  {/* <DropdownMenuItem
+                    className="text-red-600"
+                    onClick={() => handleDeleteMeal(meal.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem> */}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
 
   return (
     <div className="space-y-6">
@@ -258,7 +452,7 @@ export function ProductManagement() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search products..."
+              placeholder="Search meals..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64 pl-10"
@@ -271,20 +465,20 @@ export function ProductManagement() {
                 Status:{" "}
                 {statusFilter === "all"
                   ? "All"
-                  : statusFilter === "in_stock"
-                  ? "In Stock"
-                  : "Out of Stock"}
+                  : statusFilter === "available"
+                  ? "Available"
+                  : "Unavailable"}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={() => setStatusFilter("all")}>
                 All
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("in_stock")}>
-                In Stock
+              <DropdownMenuItem onClick={() => setStatusFilter("available")}>
+                Available
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setStatusFilter("out_of_stock")}>
-                Out of Stock
+              <DropdownMenuItem onClick={() => setStatusFilter("unavailable")}>
+                Unavailable
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -292,54 +486,48 @@ export function ProductManagement() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Filter className="h-4 w-4 mr-2" />
-                Category: {categoryFilter === "all" ? "All" : categoryFilter}
+                Type: {typeFilter === "all" ? "All" : typeFilter}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setCategoryFilter("all")}>
+              <DropdownMenuItem onClick={() => setTypeFilter("all")}>
                 All
               </DropdownMenuItem>
-              {categories.map((category) => (
+              {types.map((type) => (
                 <DropdownMenuItem
-                  key={category}
-                  onClick={() => setCategoryFilter(category)}
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
                 >
-                  {category}
+                  {type}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
         <div className="flex space-x-2">
-          {/* <Button variant="outline">Bulk Upload</Button> */}
-          {/* <Button variant="outline">Export</Button> */}
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              {/* <Button>
+            {/* <DialogTrigger asChild>
+              <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button> */}
-            </DialogTrigger>
+                Add Meal
+              </Button>
+            </DialogTrigger> */}
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
+                <DialogTitle>Add New Meal</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="productName">Product Name</Label>
-                  <Input id="productName" placeholder="Enter product name" />
+                  <Label htmlFor="mealTitle">Meal Title</Label>
+                  <Input id="mealTitle" placeholder="Enter meal title" />
                 </div>
                 <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Input id="category" placeholder="Enter category" />
+                  <Label htmlFor="type">Type</Label>
+                  <Input id="type" placeholder="Enter meal type" />
                 </div>
                 <div>
                   <Label htmlFor="price">Price</Label>
                   <Input id="price" type="number" placeholder="0.00" />
-                </div>
-                <div>
-                  <Label htmlFor="stock">Stock</Label>
-                  <Input id="stock" type="number" placeholder="0" />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button
@@ -348,9 +536,9 @@ export function ProductManagement() {
                   >
                     Cancel
                   </Button>
-                  {/* <Button onClick={() => setIsAddDialogOpen(false)}>
-                    Add Product
-                  </Button> */}
+                  <Button onClick={() => setIsAddDialogOpen(false)}>
+                    Add Meal
+                  </Button>
                 </div>
               </div>
             </DialogContent>
@@ -358,143 +546,124 @@ export function ProductManagement() {
         </div>
       </div>
 
-      {/* Products Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Product Management ({filteredProducts.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>#</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Subcategory</TableHead>
-                <TableHead>Vendor</TableHead>
-                <TableHead>Stock</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentProducts.map((product) => (
-                <TableRow key={product.id} className="hover:bg-gray-50">
-                  <TableCell>{filteredProducts.indexOf(product) + 1}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      {product?.variants[0]?.images?.length > 0 && (
-                        <img
-                          src={`${import.meta.env.VITE_BASE_URL_IMG}${
-                            product.variants[0].images[0]
-                          }`}
-                          alt={product.name}
-                          className="w-10 h-10 rounded-md object-cover bg-gray-100"
-                        />
-                      )}
-                      <div className="font-medium text-ellipsis overflow-hidden whitespace-nowrap">
-                        {product.name.split(" ").slice(0, 7).join(" ")}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{product.mainCategory.name}</TableCell>
-                  <TableCell>{product.subCategory.name}</TableCell>
-                  <TableCell>{product.vendor.name}</TableCell>
-                  <TableCell>{product.variants[0]?.stock || 0}</TableCell>
-                  <TableCell>₹{product.variants[0]?.sellingprice || "0.00"}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={getStatusColor(
-                        product.variants[0]?.stock || 0
-                      )}
-                    >
-                      {getStatusText(product.variants[0]?.stock || 0)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleDetailClick(product.id)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            navigate(
-                              isAdmin
-                                ? `/product-update/${product.id}`
-                                : `/vendor/product-update/${product.id}`
-                            )
-                          }
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => handleDeleteProduct(product.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          {filteredProducts.length > productsPerPage && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-500">
-                Showing {indexOfFirstProduct + 1} to{" "}
-                {Math.min(indexOfLastProduct, filteredProducts.length)} of{" "}
-                {filteredProducts.length} products
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (number) => (
-                    <Button
-                      key={number}
-                      variant={currentPage === number ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => paginate(number)}
-                    >
-                      {number}
-                    </Button>
-                  )
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+      {/* Tabs for Verified/Unverified Meals */}
+      <Tabs defaultValue="verified" className="w-full">
+        <TabsList>
+          <TabsTrigger value="verified">
+            <Check className="h-4 w-4 mr-2" />
+            Verified Meals ({verifiedMeals.length})
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="unverified">
+              <X className="h-4 w-4 mr-2" />
+              Pending Verification ({unverifiedMeals.length})
+            </TabsTrigger>
           )}
-        </CardContent>
-      </Card>
+        </TabsList>
+
+        <TabsContent value="verified">
+          <Card>
+            <CardContent className="pt-6">
+              {renderMealTable(currentMeals)}
+              {verifiedMeals.length > mealsPerPage && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * mealsPerPage + 1} to{" "}
+                    {Math.min(currentPage * mealsPerPage, verifiedMeals.length)}{" "}
+                    of {verifiedMeals.length} meals
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from(
+                      { length: totalPages("verified") },
+                      (_, i) => i + 1
+                    ).map((number) => (
+                      <Button
+                        key={number}
+                        variant={currentPage === number ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(number)}
+                      >
+                        {number}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(currentPage + 1)}
+                      disabled={currentPage === totalPages("verified")}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {isAdmin && (
+          <TabsContent value="unverified">
+            <Card>
+              <CardContent className="pt-6">
+                {renderMealTable(currentUnverifiedMeals)}
+                {unverifiedMeals.length > mealsPerPage && (
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="text-sm text-gray-500">
+                      Showing {(currentPage - 1) * mealsPerPage + 1} to{" "}
+                      {Math.min(
+                        currentPage * mealsPerPage,
+                        unverifiedMeals.length
+                      )}{" "}
+                      of {unverifiedMeals.length} meals
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from(
+                        { length: totalPages("unverified") },
+                        (_, i) => i + 1
+                      ).map((number) => (
+                        <Button
+                          key={number}
+                          variant={
+                            currentPage === number ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(number)}
+                        >
+                          {number}
+                        </Button>
+                      ))}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(currentPage + 1)}
+                        disabled={currentPage === totalPages("unverified")}
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+      </Tabs>
     </div>
   );
 }

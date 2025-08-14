@@ -14,9 +14,9 @@ import {
 import LoginPage from "@/components/auth/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { CustomerManagement } from "@/components/customers/CustomerManagement";
-import { VendorManagement } from "@/components/vendors/VendorManagement";
-import { ProductManagement } from "@/components/products/ProductManagement";
+import { CustomerManagement, DriverManagement } from "@/components/customers/CustomerManagement";
+import { SubAdminManagement} from "@/components/subAdmin/SubAdminManagement";
+import { MealManagement, ProductManagement } from "@/components/products/ProductManagement";
 import AddProductManagement from "@/components/addproducts/AddProductManagement";
 import { OrderManagement } from "@/components/orders/OrderManagement";
 import { CategoryManagement } from "@/components/categories/CategoryManagement";
@@ -31,7 +31,7 @@ import UserProfile from "./components/pages/userprofile";
 import VendorProfile from "./components/pages/vendorprofile";
 import ProductdetailsPage from "./components/pages/productdetailspage";
 import OrderDetails from "./components/pages/orderdetails";
-import { PendingVendors } from "./components/vendors/PendingVendors";
+import { PendingVendors } from "./components/subAdmin/PendingVendors";
 import AboutUsPage from "./components/pages/aboutus";
 import PrivacyPolicyPage from "./components/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./components/pages/TermsOfServicePage";
@@ -48,6 +48,9 @@ import { DeliveryManagement } from "./components/delivery/DeliveryManagement";
 import { PendingDelivery } from "./components/delivery/PendingDelivery";
 import PartnerProfile from "./components/pages/Partnerprofile";
 import VendorMenuPage from "./components/pages/VendorMenuPage";
+import { NotificationManagement } from "./pages/NotificationManagement";
+import DriverProfile from "./components/pages/userprofile";
+import { BookingManagement } from "./components/bookings/BookingManagement";
 
 const queryClient = new QueryClient();
 
@@ -66,13 +69,13 @@ const AdminRoute = () => {
 // Section titles and routes
 const adminSectionTitles = {
   dashboard: { title: "Admin Dashboard", subtitle: "Overview of your eCommerce platform" },
-  customers: { title: "Customer Management", subtitle: "Manage customer accounts and data" },
-  vendors: { title: "Vendor Management", subtitle: "Oversee vendor applications and stores" },
+  customers: { title: "Driver Management", subtitle: "Manage Driver accounts and data" },
+  vendors: { title: "Sub Admin Management", subtitle: "Manage sub-admin accounts and data" },
   deliveryPartners: { title: "Delivery Partners", subtitle: "Manage delivery partner applications and stores" },
   pendingPartners: { title: "Pending Partners", subtitle: "Manage pending delivery partner applications" },
   PendingVendors: { title: "Pending Vendors", subtitle: "Manage pending vendor applications" },
-  products: { title: "Product Management", subtitle: "Manage product inventory and listings" },
-  addproducts: { title: "Add Product", subtitle: "Add new products to your inventory" },
+  products: { title: "Meals Management", subtitle: "Manage meal inventory and listings" },
+  addproducts: { title: "Add Meal", subtitle: "Add new meals to your inventory" },
   orders: { title: "Order Management", subtitle: "Track and manage customer orders" },
   categories: { title: "Category Management", subtitle: "Organize product categories" },
   subcategories: { title: "SubCategory Management", subtitle: "Manage product subcategories" },
@@ -80,15 +83,17 @@ const adminSectionTitles = {
   transactions: { title: "Transactions", subtitle: "View transaction history and wallet logs" },
   pages: { title: "Static Pages", subtitle: "Manage website content pages" },
   settings: { title: "Settings", subtitle: "Configure platform settings" },
+  notifications: { title: "Notifications", subtitle: "Manage user notifications" },
 };
 
 const adminSectionRoutes = [
   { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/customers", key: "customers", element: <CustomerManagement /> },
-  { path: "/vendors", key: "vendors", element: <VendorManagement /> },
+  { path: "/drivers", key: "customers", element: <DriverManagement /> },
+  { path: "/sub-admin", key: "vendors", element: <SubAdminManagement /> },
+  { path: "/bookings", key: "bookings", element: <BookingManagement /> },
   { path: "/deliveryPartners", key: "deliveryPartners", element: <DeliveryManagement /> },
   { path: "/pendingPartners", key: "pendingPartners", element: <PendingDelivery /> },
-  { path: "/products", key: "products", element: <ProductManagement /> },
+  { path: "/meals", key: "products", element: <MealManagement /> },
   { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
   { path: "/orders", key: "orders", element: <OrderManagement /> },
   { path: "/categories", key: "categories", element: <CategoryManagement /> },
@@ -99,8 +104,8 @@ const adminSectionRoutes = [
   { path: "/pages", key: "pages", element: <StaticPagesManagement /> },
   { path: "/settings", key: "settings", element: <SettingsManagement /> },
   { path: "/userprofile/:userId", key: "userprofile", element: <UserProfile /> },
-  { path: "/vendorprofile/:vendorId", key: "vendorprofile", element: <VendorProfile /> },
-  { path: "/productdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
+  { path: "/driverprofile/:driverId", key: "driverprofile", element: <DriverProfile /> },
+  { path: "/mealdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
   { path: "/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
   { path: "/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
   { path: "/pendingvendors", key: "pendingvendors", element: <PendingVendors /> },
@@ -112,6 +117,7 @@ const adminSectionRoutes = [
   { path: "/invoice", key: "invoice", element: <Invoice /> },
   { path: "/partnerprofile/:partnerId", key: "partnerprofile", element: <PartnerProfile /> },
   { path: "/VendorMenu/:vendorId", key: "vendorMenu", element: <VendorMenuPage /> },
+  { path: "/notification", key: "notification", element: <NotificationManagement /> },
 ];
 
 // AdminLayout component

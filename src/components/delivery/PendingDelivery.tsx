@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Cookies from "js-cookie";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,41 +44,51 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  Eye,
-  Check,
-  X,
-  Trash2,
-  Edit,
-} from "lucide-react";
-import Cookies from "js-cookie";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+import { Search, MoreHorizontal, Eye, Edit, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
-// Updated form schema to include all vendor fields
+type DeliveryPartner = {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  phoneNumber2?: string;
+  longitude?: number;
+  latitude?: number;
+  address?: string;
+  city: string;
+  state: string;
+  zipCode?: string;
+  isActive: boolean;
+  isVerified: boolean;
+};
+
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
-  email: z.string().email({
-    message: "Please enter a valid email.",
+  phoneNumber: z.string().min(10, {
+    message: "Phone number must be at least 10 digits.",
   }),
-  shopname: z.string().min(2, {
-    message: "Shop name must be at least 2 characters.",
+  phoneNumber2: z.string().optional(),
+  longitude: z.string().optional(),
+  latitude: z.string().optional(),
+  address: z.string().min(5, {
+    message: "Address must be at least 5 characters.",
   }),
-  eid_no: z.string().optional(),
-  gst_no: z.string().optional(),
-  bank_name: z.string().optional(),
-  bank_account_no: z.string().optional(),
-  bank_ifsc: z.string().optional(),
-  role: z.string().default("VENDOR"),
+  city: z.string().min(2, {
+    message: "City must be at least 2 characters.",
+  }),
+  state: z.string().min(2, {
+    message: "State must be at least 2 characters.",
+  }),
+  zipCode: z.string().min(3, {
+    message: "Zip code must be at least 3 characters.",
+  }),
+  isActive: z.boolean(),
+  isVerified: z.boolean(),
 });
 
-const getStatusColor = (status) => {
+const getStatusColor = (status: string) => {
   switch (status) {
     case "active":
       return "bg-green-100 text-green-800";
@@ -83,29 +102,31 @@ const getStatusColor = (status) => {
 };
 
 export function PendingDelivery() {
-  const [vendors, setVendors] = useState([]);
+  const [deliveryPartners, setDeliveryPartners] = useState<DeliveryPartner[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isAddVendorOpen, setIsAddVendorOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentVendor, setCurrentVendor] = useState(null);
+  const [currentPartner, setCurrentPartner] = useState<DeliveryPartner | null>(null);
   const token = Cookies.get("admin_token");
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      email: "",
-      shopname: "",
-      eid_no: "",
-      gst_no: "",
-      bank_name: "",
-      bank_account_no: "",
-      bank_ifsc: "",
-      role: "VENDOR",
+      phoneNumber: "",
+      phoneNumber2: "",
+      longitude: "",
+      latitude: "",
+      address: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      isActive: false,
+      isVerified: false,
     },
   });
 
-  const fetchVendors = async () => {
+  const fetchDeliveryPartners = async () => {
     try {
       const response = await axios.get(
         `${import.meta.env.VITE_BASE_UR}admin/get-all-delivery-partners`,
@@ -115,114 +136,46 @@ export function PendingDelivery() {
           },
         }
       );
-      if (response.data) {
-        setVendors(response.data.unverified);
+      
+      if (response.data?.unverified) {
+        setDeliveryPartners(response.data.unverified);
       }
     } catch (error) {
-      console.error("Failed to fetch vendors:", error);
+      console.error("Failed to fetch delivery partners:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch pending delivery partners",
+        variant: "destructive",
+      });
     }
   };
 
   useEffect(() => {
-    fetchVendors();
+    fetchDeliveryPartners();
   }, []);
 
-  // Reset form and set current vendor when opening the dialog
-  const handleEditVendor = (vendor) => {
-    setCurrentVendor(vendor);
+  const handleEditPartner = (partner: DeliveryPartner) => {
+    setCurrentPartner(partner);
     form.reset({
-      name: vendor.name,
-      email: vendor.email,
-      shopname: vendor.shopname,
-      eid_no: vendor.eid_no || "",
-      gst_no: vendor.gst_no || "",
-      bank_name: vendor.bank_name || "",
-      bank_account_no: vendor.bank_account_no || "",
-      bank_ifsc: vendor.bank_ifsc || "",
-      role: vendor.role,
+      name: partner.name,
+      phoneNumber: partner.phoneNumber,
+      phoneNumber2: partner.phoneNumber2 || "",
+      longitude: partner.longitude?.toString() || "",
+      latitude: partner.latitude?.toString() || "",
+      address: partner.address || "",
+      city: partner.city || "",
+      state: partner.state || "",
+      zipCode: partner.zipCode || "",
+      isActive: partner.isActive,
+      isVerified: partner.isVerified,
     });
-    setIsAddVendorOpen(true);
+    setIsEditDialogOpen(true);
   };
 
-  const filteredVendors = vendors.filter((vendor) =>
-    vendor?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
-  );
-
-  const onSubmit = async (values) => {
-    console.log("Submitting vendor:", values);
-    setIsLoading(true);
-    try {
-      const payload = {
-        id: currentVendor ? currentVendor.id : undefined,
-        name: values.name,
-        email: values.email,
-        shopname: values.shopname,
-        eid_no: values.eid_no,
-        gst_no: values.gst_no,
-        bank_name: values.bank_name,
-        bank_account_no: values.bank_account_no,
-        bank_ifsc: values.bank_ifsc,
-        role: values.role,
-      };
-
-      let response;
-      if (currentVendor) {
-        // Update existing vendor (send JSON, not FormData)
-        response = await axios.put(
-          `${import.meta.env.VITE_BASE_UR}admin/update-vendor-details`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      } else {
-        // Create new vendor (still using FormData for registration)
-        const formData = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined) formData.append(key, value);
-        });
-        response = await axios.post(
-          `${import.meta.env.VITE_BASE_UR}public/vendor-register`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        );
-      }
-
-      if (response.data.success) {
-        toast({
-          title: currentVendor ? "Vendor Updated" : "Vendor Added",
-          description: currentVendor
-            ? "The vendor was updated successfully."
-            : "A new vendor was added successfully.",
-        });
-        await fetchVendors();
-        setIsAddVendorOpen(false);
-        setCurrentVendor(null);
-        form.reset();
-      }
-    } catch (error) {
-      console.error("Failed to submit vendor:", error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "An error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleDeleteVendor = async (vendorId) => {
+  const handleDeletePartner = async (partnerId: string) => {
     try {
       const response = await axios.delete(
-        `${import.meta.env.VITE_BASE_UR}admin/delete-vendor/${vendorId}`,
+        `${import.meta.env.VITE_BASE_UR}admin/hard-delete-delivery-partner/${partnerId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -232,20 +185,78 @@ export function PendingDelivery() {
 
       if (response.data.success) {
         toast({
-          title: "Vendor Deleted",
-          description: "The vendor was deleted successfully.",
+          title: "Partner Deleted",
+          description: "The delivery partner was deleted successfully.",
         });
-        await fetchVendors();
+        await fetchDeliveryPartners();
       }
     } catch (error) {
-      console.error("Failed to delete vendor:", error);
+      console.error("Failed to delete delivery partner:", error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to delete vendor",
+        description: error.response?.data?.message || "Failed to delete partner",
         variant: "destructive",
       });
     }
   };
+
+  const onSubmit = async (values) => {
+    setIsLoading(true);
+    try {
+      const payload = {
+        name: values.name,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+        phoneNumber2: values.phoneNumber2,
+        vehicleType: values.vehicleType,
+        vehicleNumber: values.vehicleNumber,
+        drivingLicense: values.drivingLicense,
+        aadharNumber: values.aadharNumber,
+        panNumber: values.panNumber,
+        longitude: values.longitude ? parseFloat(values.longitude) : undefined,
+        latitude: values.latitude ? parseFloat(values.latitude) : undefined,
+        address: values.address,
+        city: values.city,
+        state: values.state,
+        zipCode: values.zipCode,
+        isActive: values.isActive,
+        isVerified: values.isVerified,
+      };
+
+      const response = await axios.put(
+        `${import.meta.env.VITE_BASE_UR}admin/update-delivery-partner/${currentPartner.id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data) {
+        toast({
+          title: "Success",
+          description: "Delivery partner updated successfully",
+        });
+        await fetchDeliveryPartners();
+        setIsEditDialogOpen(false);
+      }
+    } catch (error) {
+      console.error("Failed to update delivery partner:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update delivery partner",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filteredPartners = deliveryPartners.filter((partner) =>
+    partner?.name?.toLowerCase()?.includes(searchTerm?.toLowerCase())
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -255,7 +266,7 @@ export function PendingDelivery() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Search vendors..."
+              placeholder="Search delivery partners..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64 pl-10"
@@ -264,17 +275,13 @@ export function PendingDelivery() {
         </div>
       </div>
 
-      {/* Edit Vendor Modal */}
-      <Dialog open={isAddVendorOpen} onOpenChange={setIsAddVendorOpen}>
+      {/* Edit Delivery Partner Modal */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>
-              {currentVendor ? "Edit Vendor" : "Add New Vendor"}
-            </DialogTitle>
+            <DialogTitle>Edit Delivery Partner</DialogTitle>
             <DialogDescription>
-              {currentVendor
-                ? "Update the vendor details below."
-                : "Fill out the form to register a new vendor."}
+              Update the delivery partner details below.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -287,9 +294,9 @@ export function PendingDelivery() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Supplier Name</FormLabel>
+                        <FormLabel>Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter vendor name" {...field} />
+                          <Input placeholder="Enter name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -297,12 +304,12 @@ export function PendingDelivery() {
                   />
                   <FormField
                     control={form.control}
-                    name="shopname"
+                    name="phoneNumber"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Shop Name</FormLabel>
+                        <FormLabel>Primary Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter shop name" {...field} />
+                          <Input placeholder="Enter phone number" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -310,12 +317,12 @@ export function PendingDelivery() {
                   />
                   <FormField
                     control={form.control}
-                    name="eid_no"
+                    name="phoneNumber2"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>EID Number</FormLabel>
+                        <FormLabel>Secondary Phone</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter EID number" {...field} />
+                          <Input placeholder="Enter alternate phone" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -323,12 +330,12 @@ export function PendingDelivery() {
                   />
                   <FormField
                     control={form.control}
-                    name="gst_no"
+                    name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>GST Number</FormLabel>
+                        <FormLabel>Address</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter GST number" {...field} />
+                          <Input placeholder="Enter address" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -340,16 +347,12 @@ export function PendingDelivery() {
                 <div className="space-y-4">
                   <FormField
                     control={form.control}
-                    name="email"
+                    name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel>City</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Enter email"
-                            {...field}
-                            disabled={currentVendor !== null}
-                          />
+                          <Input placeholder="Enter city" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -357,12 +360,12 @@ export function PendingDelivery() {
                   />
                   <FormField
                     control={form.control}
-                    name="bank_name"
+                    name="state"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank Name</FormLabel>
+                        <FormLabel>State</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter bank name" {...field} />
+                          <Input placeholder="Enter state" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -370,34 +373,84 @@ export function PendingDelivery() {
                   />
                   <FormField
                     control={form.control}
-                    name="bank_account_no"
+                    name="zipCode"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bank Account Number</FormLabel>
+                        <FormLabel>Zip Code</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="Enter account number"
-                            {...field}
-                          />
+                          <Input placeholder="Enter zip code" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="bank_ifsc"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank IFSC Code</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter IFSC code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="latitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Latitude</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter latitude" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="longitude"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Longitude</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter longitude" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </div>
+              </div>
+
+              {/* Status Switches */}
+              <div className="flex space-x-4">
+                <FormField
+                  control={form.control}
+                  name="isActive"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 flex-1">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Active Status</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="isVerified"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 flex-1">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Verified</FormLabel>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
@@ -405,20 +458,14 @@ export function PendingDelivery() {
                   variant="outline"
                   type="button"
                   onClick={() => {
-                    setIsAddVendorOpen(false);
-                    setCurrentVendor(null);
+                    setIsEditDialogOpen(false);
+                    setCurrentPartner(null);
                   }}
                 >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading}>
-                  {isLoading
-                    ? currentVendor
-                      ? "Updating..."
-                      : "Adding..."
-                    : currentVendor
-                    ? "Update Vendor"
-                    : "Add Vendor"}
+                  {isLoading ? "Updating..." : "Update Delivery Partner"}
                 </Button>
               </div>
             </form>
@@ -426,36 +473,38 @@ export function PendingDelivery() {
         </DialogContent>
       </Dialog>
 
-      {/* Vendors Table */}
+      {/* Delivery Partners Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Pending Vendor Approvals</CardTitle>
+          <CardTitle>Pending Delivery Partners</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Vendor Name</TableHead>
+                <TableHead>#</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Shop Name</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>Location</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredVendors?.map((vendor) => (
-                <TableRow key={vendor.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium">{vendor.name}</TableCell>
-                  <TableCell>{vendor.email}</TableCell>
-                  <TableCell>{vendor.businessName}</TableCell>
+              {filteredPartners.map((partner, index) => (
+                <TableRow key={partner.id} className="hover:bg-gray-50">
+                  <TableCell>{index + 1}</TableCell>
+                  <TableCell className="font-medium">{partner.name}</TableCell>
+                  <TableCell className="font-medium">{partner.email}</TableCell>
+                  <TableCell>{partner.phoneNumber}</TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(vendor.status)}>
-                      {vendor.status}
+                    <Badge className={getStatusColor(partner.isVerified ? "active" : "pending")}>
+                      {partner.isVerified ? "Verified" : "Pending"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(vendor.createdAt).toLocaleDateString()}
+                    {partner.city}, {partner.state}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
@@ -468,21 +517,21 @@ export function PendingDelivery() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() =>
-                              (window.location.href = `/admin/partnerprofile/${vendor.id}`)
+                              (window.location.href = `/admin/partnerprofile/${partner.id}`)
                             }
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View Profile
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleEditVendor(vendor)}
+                            onClick={() => handleEditPartner(partner)}
                           >
                             <Edit className="mr-2 h-4 w-4" />
-                            Edit Vendor
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleDeleteVendor(vendor.id)}
+                            onClick={() => handleDeletePartner(partner.id)}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Delete

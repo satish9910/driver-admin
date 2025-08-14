@@ -3,25 +3,25 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams } from "react-router-dom";
 
-const UserProfile = () => {
-  const { userId } = useParams();
-  const [userData, setUserData] = useState(null);
+const DriverProfile = () => {
+  const { driverId } = useParams();
+  const [driverData, setDriverData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const token = Cookies.get("admin_token");
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchDriverData = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/get-user/${userId}`,
+          `${import.meta.env.VITE_BASE_UR}admin/driver/${driverId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           }
         );
-        setUserData(response.data.user);
+        setDriverData(response.data.driver);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -29,8 +29,8 @@ const UserProfile = () => {
       }
     };
 
-    fetchUserData();
-  }, [userId, token]);
+    fetchDriverData();
+  }, [driverId, token]);
 
   if (loading) {
     return (
@@ -54,7 +54,7 @@ const UserProfile = () => {
     );
   }
 
-  if (!userData) {
+  if (!driverData) {
     return (
       <div className="p-6">
         <div
@@ -62,80 +62,65 @@ const UserProfile = () => {
           role="alert"
         >
           <strong className="font-bold">Warning: </strong>
-          <span className="block sm:inline">No user data found</span>
+          <span className="block sm:inline">No driver data found</span>
         </div>
       </div>
     );
   }
 
-  // Get default address if exists
-  const defaultAddress =
-    userData.Address?.find((addr) => addr.isDefault) || userData.Address?.[0];
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Format booking date (just date without time)
+  const formatBookingDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Get status badge
+  const getStatusBadge = () => {
+    if (!driverData.isActive) {
+      return (
+        <span className="inline-block px-3 py-1 rounded-full text-center text-xs font-semibold bg-yellow-100 text-yellow-800">
+          Inactive
+        </span>
+      );
+    }
+    return (
+      <span className="inline-block px-3 py-1 rounded-full text-center text-xs font-semibold bg-green-100 text-green-800">
+        Active
+      </span>
+    );
+  };
 
   return (
     <div className="p-6">
       <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-xl p-6">
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div className="flex items-center mb-4 md:mb-0">
-            {/* <div className="relative">
-              <img
-                src={"https://via.placeholder.com/150"}
-                alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-4 border-blue-100"
-              />
-            </div> */}
-            <div className="ml-6">
-              <h1 className="text-2xl font-bold text-gray-800">
-                {userData.name}
-              </h1>
-              <p className="text-gray-600">{userData.email}</p>
-              {/* <span
-                className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${
-                  userData.role === "ADMIN"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}
-              >
-                {userData.role}
-              </span> */}
-            </div>
-          </div>
-          {/* <div className="flex space-x-3">
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6z" />
-              </svg>
-              View Activity
-            </button>
-            <button className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 mr-2"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-              Edit Profile
-            </button>
-          </div> */}
-        </div>
-
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-blue-50 p-4 rounded-lg">
             <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm text-blue-600 font-medium">User Role</p>
+              <div className="flex flex-col gap-5 justify-center">
+                <p className="text-sm text-blue-600 font-medium">Driver</p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {userData.role}
+                  {driverData.name || "N/A"}
                 </p>
+                {getStatusBadge()}
               </div>
               <div className="bg-blue-100 p-3 rounded-full">
                 <svg
@@ -163,10 +148,7 @@ const UserProfile = () => {
                   Member Since
                 </p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {new Date(userData.createdAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                  })}
+                  {formatDate(driverData.createdAt)}
                 </p>
               </div>
               <div className="bg-green-100 p-3 rounded-full">
@@ -192,14 +174,10 @@ const UserProfile = () => {
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-purple-600 font-medium">
-                  Last Updated
+                  Vehicle Number
                 </p>
                 <p className="text-2xl font-bold text-gray-800">
-                  {new Date(userData.updatedAt).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {driverData.vehicleNumber || "N/A"}
                 </p>
               </div>
               <div className="bg-purple-100 p-3 rounded-full">
@@ -214,7 +192,7 @@ const UserProfile = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
                   />
                 </svg>
               </div>
@@ -223,7 +201,7 @@ const UserProfile = () => {
         </div>
 
         {/* Details Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
               Personal Information
@@ -231,74 +209,136 @@ const UserProfile = () => {
             <div className="space-y-4">
               <div>
                 <p className="text-sm text-gray-500">Full Name</p>
-                <p className="font-medium text-gray-800">{userData.name}</p>
+                <p className="font-medium text-gray-800">
+                  {driverData.name || "N/A"}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Email Address</p>
-                <p className="font-medium text-gray-800">{userData.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">User Role</p>
-                <p className="font-medium text-gray-800">{userData.role}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Account Created</p>
                 <p className="font-medium text-gray-800">
-                  {new Date(userData.createdAt).toLocaleString()}
+                  {driverData.email || "N/A"}
                 </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Mobile Number</p>
+                <p className="font-medium text-gray-800">
+                  {driverData.mobile || "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Account Status</p>
+                <div className="font-medium text-gray-800">
+                  {getStatusBadge()}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded-lg p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">
-              Address Information
+              Driver Details
             </h2>
-            {defaultAddress ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-500">Street Address</p>
-                  <p className="font-medium text-gray-800">
-                    {defaultAddress.houseNo}, {defaultAddress.street}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">City</p>
-                  <p className="font-medium text-gray-800">
-                    {defaultAddress.city}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">District</p>
-                  <p className="font-medium text-gray-800">
-                    {defaultAddress.district}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Pincode</p>
-                  <p className="font-medium text-gray-800">
-                    {defaultAddress.pincode}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Address Type</p>
-                  <p className="font-medium text-gray-800">
-                    {defaultAddress.isDefault
-                      ? "Default Address"
-                      : "Secondary Address"}
-                  </p>
-                </div>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Vehicle Number</p>
+                <p className="font-medium text-gray-800">
+                  {driverData.vehicleNumber || "N/A"}
+                </p>
               </div>
-            ) : (
-              <p className="text-gray-500 italic">
-                No address information available
-              </p>
-            )}
+              <div>
+                <p className="text-sm text-gray-500">License Number</p>
+                <p className="font-medium text-gray-800">
+                  {driverData.licenseNumber || "N/A"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Account Created</p>
+                <p className="font-medium text-gray-800">
+                  {formatDate(driverData.createdAt)}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Last Updated</p>
+                <p className="font-medium text-gray-800">
+                  {formatDate(driverData.updatedAt)}
+                </p>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* Bookings Section */}
+        <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">
+            Driver Bookings
+          </h2>
+          {driverData.bookings && driverData.bookings.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Trip
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Price
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Booked On
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {driverData.bookings.map((booking) => (
+                    <tr key={booking._id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {booking.customerName}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {booking.phoneNumber}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {booking.pickupLocation} → {booking.dropLocation}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatBookingDate(booking.date)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {booking.duration}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ₹{booking.price}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatDate(booking.createdAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-500">No bookings found for this driver</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-export default UserProfile;
+export default DriverProfile;
