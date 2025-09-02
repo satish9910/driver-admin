@@ -14,12 +14,12 @@ import {
 import LoginPage from "@/components/auth/LoginPage";
 import NotFound from "./pages/NotFound";
 import { Dashboard } from "@/components/dashboard/Dashboard";
-import { CustomerManagement, DriverManagement } from "@/components/customers/CustomerManagement";
+import { DriverManagement } from "@/components/customers/CustomerManagement";
 import { SubAdminManagement} from "@/components/subAdmin/SubAdminManagement";
-import { MealManagement, ProductManagement } from "@/components/products/ProductManagement";
+import { MealManagement } from "@/components/products/ProductManagement";
 import AddProductManagement from "@/components/addproducts/AddProductManagement";
 import { OrderManagement } from "@/components/orders/OrderManagement";
-import { CategoryManagement } from "@/components/categories/CategoryManagement";
+import { WalletManagement } from "@/components/wallet/WalletManagement";
 import { SubCategoryManagement } from "@/components/subcategoies/SubCategoryManagement";
 import { BannerManagement } from "@/components/banners/BannerManagement";
 import { TransactionManagement } from "@/components/transactions/TransactionManagement";
@@ -31,7 +31,7 @@ import UserProfile from "./components/pages/userprofile";
 import VendorProfile from "./components/pages/vendorprofile";
 import ProductdetailsPage from "./components/pages/productdetailspage";
 import OrderDetails from "./components/pages/orderdetails";
-import { PendingVendors } from "./components/subAdmin/PendingVendors";
+// import { PendingVendors } from "./components/subAdmin/PendingVendors";
 import AboutUsPage from "./components/pages/aboutus";
 import PrivacyPolicyPage from "./components/pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./components/pages/TermsOfServicePage";
@@ -41,7 +41,6 @@ import Cookies from "js-cookie";
 import { SubSubCategoryManagement } from "./components/sub-subcategoies/SubSubCategoryManagement";
 import UpdateProductManagement from "./components/pages/UpdateProductManagement";
 import { ContactQueriesManagement } from "./pages/ContactQueriesManagement";
-import Invoice from "./components/Invoice";
 import './App.css';
 import { cn } from "./lib/utils";
 import { DeliveryManagement } from "./components/delivery/DeliveryManagement";
@@ -51,6 +50,11 @@ import VendorMenuPage from "./components/pages/VendorMenuPage";
 import { NotificationManagement } from "./pages/NotificationManagement";
 import DriverProfile from "./components/pages/userprofile";
 import { BookingManagement } from "./components/bookings/BookingManagement";
+import { DriverWalletManagement } from "./components/pages/DriverWalletPage";
+import { SubAdminWalletManagement } from "./components/pages/SubAdminPage";
+import DriverBookingsTable from "./components/pages/DriverBookingsTable";
+import BookingDetailPage from "./components/pages/BookingDetailPage";
+import { LabelManagement } from "./components/label/Label";
 
 const queryClient = new QueryClient();
 
@@ -71,13 +75,15 @@ const adminSectionTitles = {
   dashboard: { title: "Admin Dashboard", subtitle: "Overview of your eCommerce platform" },
   customers: { title: "Driver Management", subtitle: "Manage Driver accounts and data" },
   vendors: { title: "Sub Admin Management", subtitle: "Manage sub-admin accounts and data" },
+  drivers: { title: "Driver Management", subtitle: "Manage driver accounts and data" },
+  labels: { title: "Label Management", subtitle: "Manage labels for products and categories" },
   deliveryPartners: { title: "Delivery Partners", subtitle: "Manage delivery partner applications and stores" },
   pendingPartners: { title: "Pending Partners", subtitle: "Manage pending delivery partner applications" },
-  PendingVendors: { title: "Pending Vendors", subtitle: "Manage pending vendor applications" },
+  // PendingVendors: { title: "Pending Vendors", subtitle: "Manage pending vendor applications" },
   products: { title: "Meals Management", subtitle: "Manage meal inventory and listings" },
   addproducts: { title: "Add Meal", subtitle: "Add new meals to your inventory" },
   orders: { title: "Order Management", subtitle: "Track and manage customer orders" },
-  categories: { title: "Category Management", subtitle: "Organize product categories" },
+  wallet: { title: "Wallet Management", subtitle: "Manage wallet transactions and balance" },
   subcategories: { title: "SubCategory Management", subtitle: "Manage product subcategories" },
   banners: { title: "Banner Management", subtitle: "Manage homepage banners and promotions" },
   transactions: { title: "Transactions", subtitle: "View transaction history and wallet logs" },
@@ -88,7 +94,8 @@ const adminSectionTitles = {
 
 const adminSectionRoutes = [
   { path: "/dashboard", key: "dashboard", element: <Dashboard /> },
-  { path: "/drivers", key: "customers", element: <DriverManagement /> },
+  { path: "/drivers", key: "drivers", element: <DriverManagement /> },
+  { path: "/labels", key: "labels", element: <LabelManagement /> },
   { path: "/sub-admin", key: "vendors", element: <SubAdminManagement /> },
   { path: "/bookings", key: "bookings", element: <BookingManagement /> },
   { path: "/deliveryPartners", key: "deliveryPartners", element: <DeliveryManagement /> },
@@ -96,7 +103,7 @@ const adminSectionRoutes = [
   { path: "/meals", key: "products", element: <MealManagement /> },
   { path: "/addproducts", key: "addproducts", element: <AddProductManagement /> },
   { path: "/orders", key: "orders", element: <OrderManagement /> },
-  { path: "/categories", key: "categories", element: <CategoryManagement /> },
+  { path: "/wallet", key: "wallet", element: <WalletManagement /> },
   { path: "/subcategories", key: "subcategories", element: <SubCategoryManagement /> },
   { path: "/sub-sub-categories", key: "subsubcategories", element: <SubSubCategoryManagement/> },
   { path: "/banners", key: "banners", element: <BannerManagement /> },
@@ -105,18 +112,20 @@ const adminSectionRoutes = [
   { path: "/settings", key: "settings", element: <SettingsManagement /> },
   { path: "/userprofile/:userId", key: "userprofile", element: <UserProfile /> },
   { path: "/driverprofile/:driverId", key: "driverprofile", element: <DriverProfile /> },
-  { path: "/mealdetails/:productId", key: "productdetails", element: <ProductdetailsPage /> },
+  { path: "/driverwallet/:driverId", key: "driverwallet", element: <DriverWalletManagement /> },
+  { path: "/subadmin-wallet/:subAdminId", key: "subadminwallet", element: <SubAdminWalletManagement /> },
   { path: "/product-update/:productId", key: "productUpdate", element: <UpdateProductManagement /> },
   { path: "/orderdetails/:orderId", key: "orderdetails", element: <OrderDetails /> },
-  { path: "/pendingvendors", key: "pendingvendors", element: <PendingVendors /> },
+  // { path: "/pendingvendors", key: "pendingvendors", element: <PendingVendors /> },
   { path: "/aboutus", key: "aboutus", element: <AboutUsPage /> },
   { path: "/privacypolicy", key: "privacypolicy", element: <PrivacyPolicyPage /> },
   { path: "/refundpolicy", key: "refundpolicy", element: <RefundPolicy /> },
   { path: "/termsofservice", key: "termsofservice", element: <TermsOfServicePage /> },
   { path: "/contact-us", key: "contactus", element: <ContactQueriesManagement /> },
-  { path: "/invoice", key: "invoice", element: <Invoice /> },
   { path: "/partnerprofile/:partnerId", key: "partnerprofile", element: <PartnerProfile /> },
   { path: "/VendorMenu/:vendorId", key: "vendorMenu", element: <VendorMenuPage /> },
+  { path: "/driver-bookings/:driverId", key: "driverBookings", element: <DriverBookingsTable /> },
+  { path: "/booking/:bookingId", key: "bookingDetail", element: <BookingDetailPage /> },
   { path: "/notification", key: "notification", element: <NotificationManagement /> },
 ];
 
@@ -144,7 +153,6 @@ function AdminLayout() {
       <Sidebar
         activeSection={activeSection}
         onSectionChange={(section) => navigate(`/${section}`)}
-        isAdmin={true}
       />
       <div className={cn(
         "flex-1 flex flex-col transition-all duration-300",

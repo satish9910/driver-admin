@@ -44,7 +44,8 @@ import {
 } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/components/ui/use-toast";
-import { Search, MoreHorizontal, Trash2, Plus } from "lucide-react";
+import { Search, MoreHorizontal, Trash2, Plus, Wallet } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Form schema for sub-admin creation
 const formSchema = z.object({
@@ -84,6 +85,8 @@ export function SubAdminManagement() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const token = Cookies.get("admin_token");
+
+  const navigate = useNavigate();
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -217,6 +220,12 @@ export function SubAdminManagement() {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  const handleViewWallet = (subAdminId) => {
+   navigate(`/subadmin-wallet/${subAdminId}`);
+  };
+
+
 
   return (
     <div className="space-y-6 p-6">
@@ -367,7 +376,7 @@ export function SubAdminManagement() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Permissions</TableHead>
-                <TableHead>Created At</TableHead>
+                <TableHead>Join Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -405,6 +414,13 @@ export function SubAdminManagement() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleViewWallet(subAdmin._id)}
+                        >
+                          <Wallet className="mr-2 h-4 w-4" />
+                          View Wallet
+                        </DropdownMenuItem>
+
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDeleteSubAdmin(subAdmin._id)}

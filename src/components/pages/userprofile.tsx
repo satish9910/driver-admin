@@ -81,17 +81,6 @@ const DriverProfile = () => {
     });
   };
 
-  // Format booking date (just date without time)
-  const formatBookingDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   // Get status badge
   const getStatusBadge = () => {
     if (!driverData.isActive) {
@@ -107,6 +96,9 @@ const DriverProfile = () => {
       </span>
     );
   };
+
+  // Check if bookings exist and have data
+  const hasBookings = driverData.bookings?.data?.length > 0;
 
   return (
     <div className="p-6">
@@ -272,62 +264,37 @@ const DriverProfile = () => {
           <h2 className="text-lg font-semibold text-gray-800 mb-4">
             Driver Bookings
           </h2>
-          {driverData.bookings && driverData.bookings.length > 0 ? (
+          {Array.isArray(driverData.bookings) && driverData.bookings.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Trip
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Duration
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Booked On
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {driverData.bookings.map((booking) => (
-                    <tr key={booking._id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {booking.customerName}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {booking.phoneNumber}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {booking.pickupLocation} → {booking.dropLocation}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatBookingDate(booking.date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {booking.duration}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{booking.price}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatDate(booking.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+          <thead className="bg-gray-50">
+            <tr>
+              {driverData.bookings[0].data.map((item) => (
+                <th
+            key={item.key}
+            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+            {item.key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {driverData.bookings.map((booking) => (
+              <tr key={booking._id}>
+                {booking.data.map((item) => (
+            <td
+              key={item._id}
+              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+            >
+              {item.value !== "" && item.value !== null
+                ? item.value.toString()
+                : "N/A"}
+            </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
               </table>
             </div>
           ) : (

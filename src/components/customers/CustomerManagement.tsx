@@ -44,6 +44,9 @@ import {
   X,
   Edit,
   Trash2,
+  Upload,
+  Wallet,
+  Calendar,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
@@ -54,6 +57,9 @@ const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
+  drivercode: z.string().min(2, {
+    message: "Driver code must be at least 2 characters.",
+  }),
   email: z.string().email({
     message: "Please enter a valid email.",
   }),
@@ -62,9 +68,7 @@ const formSchema = z.object({
   }),
   password: z.string().min(6, {
     message: "Password must be at least 6 characters.",
-  }).optional(), // Make password optional
-  vehicleNumber: z.string().optional(),
-  licenseNumber: z.string().optional(),
+  }).optional(),
 });
 
 const getStatusBadge = (isActive) => {
@@ -81,17 +85,17 @@ export function DriverManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentDriver, setCurrentDriver] = useState(null);
+  const [profilePicture, setProfilePicture] = useState(null);
   const token = Cookies.get("admin_token");
   const navigation = useNavigate();
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
+      drivercode: "",
       email: "",
       mobile: "",
       password: "",
-      vehicleNumber: "",
-      licenseNumber: "",
     },
   });
 
@@ -138,23 +142,22 @@ export function DriverManagement() {
     setCurrentDriver(driver);
     form.reset({
       name: driver.name || "",
+      drivercode: driver.drivercode || "",
       email: driver.email || "",
       mobile: driver.mobile || "",
-      vehicleNumber: driver.vehicleNumber || "",
-      licenseNumber: driver.licenseNumber || "",
     });
     setIsEditDialogOpen(true);
   };
 
   const handleCreateDriver = () => {
     setCurrentDriver(null);
+    setProfilePicture(null);
     form.reset({
       name: "",
+      drivercode: "",
       email: "",
       mobile: "",
       password: "",
-      vehicleNumber: "",
-      licenseNumber: "",
     });
     setIsEditDialogOpen(true);
   };
@@ -166,15 +169,29 @@ export function DriverManagement() {
   const onSubmit = async (values) => {
     setIsLoading(true);
     try {
+      const formData = new FormData();
+      
+      // Append all form values
+      Object.keys(values).forEach(key => {
+        if (values[key]) {
+          formData.append(key, values[key]);
+        }
+      });
+      
+      // Append profile picture if selected
+      if (profilePicture) {
+        formData.append("profilePicture", profilePicture);
+      }
+
       if (currentDriver) {
         // Update existing driver
         const response = await axios.put(
           `${import.meta.env.VITE_BASE_UR}admin/update-drivers/${currentDriver._id}`,
-          values,
+          formData,
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
+              "Content-Type": "multipart/form-data",
             },
           }
         );
@@ -189,10 +206,10 @@ export function DriverManagement() {
         // Create new driver
         const response = await axios.post(
           `${import.meta.env.VITE_BASE_UR}public/user-signup`,
-          values,
+          formData,
           {
             headers: {
-              "Content-Type": "application/json",
+              "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
           }
@@ -209,6 +226,7 @@ export function DriverManagement() {
       await fetchDrivers();
       setIsEditDialogOpen(false);
       setCurrentDriver(null);
+      setProfilePicture(null);
       form.reset();
     } catch (error) {
       console.error("Failed to save driver:", error);
@@ -221,35 +239,6 @@ export function DriverManagement() {
       setIsLoading(false);
     }
   };
-
-  // const handleToggleStatus = async (driverId, currentStatus) => {
-  //   try {
-  //     const response = await axios.put(
-  //       `${import.meta.env.VITE_BASE_UR}admin/toggle-driver-status/${driverId}`,
-  //       { isActive: !currentStatus },
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
-
-  //     if (response.data.success) {
-  //       toast({
-  //         title: "Status Updated",
-  //         description: `Driver has been ${!currentStatus ? "activated" : "deactivated"}`,
-  //       });
-  //       await fetchDrivers();
-  //     }
-  //   } catch (error) {
-  //     console.error("Failed to update driver status:", error);
-  //     toast({
-  //       title: "Error",
-  //       description: error.response?.data?.message || "Failed to update status",
-  //       variant: "destructive",
-  //     });
-  //   }
-  // };
 
   const handleDeleteDriver = async (driverId) => {
     try {
@@ -284,6 +273,24 @@ export function DriverManagement() {
     navigation(`/driverprofile/${driver._id}`);
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePicture(file);
+    }
+  };
+
+  const handleDriverWallet = (driverId) => {
+    // Navigate to the driver wallet page
+    navigation(`/driverwallet/${driverId}`);
+  };
+
+  const handleDriverBookings = (driverId) => {
+    // Navigate to the driver bookings page
+    navigation(`/driver-bookings/${driverId}`);
+  };
+  
+
   return (
     <div className="space-y-6 p-6">
       {/* Header with Search */}
@@ -317,7 +324,7 @@ export function DriverManagement() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -326,6 +333,19 @@ export function DriverManagement() {
                       <FormLabel>Driver Name</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter driver name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="drivercode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Driver Code</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter driver code" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -380,32 +400,35 @@ export function DriverManagement() {
                     )}
                   />
                 )}
-                <FormField
-                  control={form.control}
-                  name="vehicleNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Vehicle Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter vehicle number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="licenseNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>License Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter license number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Profile Picture</FormLabel>
+                  <div className="flex items-center space-x-2">
+                    <label
+                      htmlFor="profilePicture"
+                      className="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md cursor-pointer hover:bg-gray-50"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload
+                    </label>
+                    <input
+                      id="profilePicture"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    {profilePicture && (
+                      <span className="text-sm text-gray-500">
+                        {profilePicture.name}
+                      </span>
+                    )}
+                    {currentDriver?.profilePicture && !profilePicture && (
+                      <span className="text-sm text-gray-500">
+                        Current image exists
+                      </span>
+                    )}
+                  </div>
+                </FormItem>
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
@@ -415,6 +438,7 @@ export function DriverManagement() {
                   onClick={() => {
                     setIsEditDialogOpen(false);
                     setCurrentDriver(null);
+                    setProfilePicture(null);
                     form.reset();
                   }}
                 >
@@ -445,11 +469,11 @@ export function DriverManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>#</TableHead>
+                <TableHead>Profile Picture</TableHead>
+                <TableHead>Driver Code</TableHead>
                 <TableHead>Driver Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Mobile</TableHead>
-                <TableHead>Vehicle Number</TableHead>
-                <TableHead>License Number</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Join Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -459,36 +483,28 @@ export function DriverManagement() {
               {filteredDrivers?.map((driver, index) => (
                 <TableRow key={driver._id} className="hover:bg-gray-50">
                   <TableCell>{index + 1}</TableCell>
+                  <TableCell>
+                    {driver.profilePicture ? (
+                      <img
+                        src={`${import.meta.env.VITE_BASE_URL_IMG}${driver.profilePicture}`}
+                        alt={driver.name}
+                        className="h-10 w-10 rounded-full"
+                      />
+                    ) : (
+                      "-"
+                    )}
+                  </TableCell>
+
+                  <TableCell>{driver.drivercode || "-"}</TableCell>
                   <TableCell className="font-medium">{driver.name}</TableCell>
                   <TableCell>{driver.email}</TableCell>
                   <TableCell>{driver.mobile}</TableCell>
-                  <TableCell>{driver.vehicleNumber || "-"}</TableCell>
-                  <TableCell>{driver.licenseNumber || "-"}</TableCell>
                   <TableCell>{getStatusBadge(driver.isActive)}</TableCell>
                   <TableCell>
                     {new Date(driver.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
-                      {/* <Button
-                        size="sm"
-                        variant="outline"
-                        className={
-                          driver.isActive
-                            ? "text-red-600 border-red-600 hover:bg-red-50"
-                            : "text-green-600 border-green-600 hover:bg-green-50"
-                        }
-                        onClick={() =>
-                          handleToggleStatus(driver._id, driver.isActive)
-                        }
-                      >
-                        {driver.isActive ? (
-                          <X className="h-4 w-4 mr-1" />
-                        ) : (
-                          <Check className="h-4 w-4 mr-1" />
-                        )}
-                        {driver.isActive ? "Deactivate" : "Activate"}
-                      </Button> */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon">
@@ -501,6 +517,18 @@ export function DriverManagement() {
                           >
                             <Eye className="mr-2 h-4 w-4" />
                             View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDriverBookings(driver._id)}
+                          >
+                            <Calendar className="mr-2 h-4 w-4" />
+                            View Bookings
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDriverWallet(driver._id)}
+                          >
+                            <Wallet className="mr-2 h-4 w-4" />
+                            View Wallet
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleEditDriver(driver)}

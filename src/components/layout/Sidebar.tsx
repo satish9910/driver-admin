@@ -26,6 +26,8 @@ interface SidebarProps {
 
 const allSidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, permission: null },
+  { id: "wallet", label: "Wallet", icon: Image, permission: null },
+  { id: "labels", label: "Labels", icon: Image, permission: "manage_labels" },
   { id: "drivers", label: "Drivers", icon: Users, permission: "manage_drivers" },
   { id: "sub-admin", label: "Sub Admin", icon: Store, permission: "manage_subadmins" },
   { id: "bookings", label: "Bookings", icon: ShoppingCart, permission: "manage_bookings" },
@@ -34,7 +36,6 @@ const allSidebarItems = [
   // { id: "meals", label: "Meals", icon: Package, permission: "manage_meals" },
   // { id: "addproducts", label: "Add Meal", icon: Package, permission: "manage_meals" },
   // { id: "orders", label: "Orders", icon: ShoppingCart, permission: "manage_orders" },
-  // { id: "categories", label: "Categories", icon: Image, permission: "manage_categories" },
   // { id: "subcategories", label: "Sub Categories", icon: Image, permission: "manage_categories" },
   // { id: "sub-sub-categories", label: "Sub Sub Categories", icon: Image, permission: "manage_categories" },
   // { id: "banners", label: "Banners", icon: Image, permission: "manage_banners" },
