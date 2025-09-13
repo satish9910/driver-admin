@@ -13,7 +13,6 @@ import {
 import {
   Search,
   Upload,
-  Download,
   ChevronLeft,
   ChevronRight,
   Calendar,
@@ -30,12 +29,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { AssignDriverModal } from "./AssignDriverModal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ExpenseModal } from "./ExpenseModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useNavigate } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
 
 // Data modeling
 type Primitive = string | number | boolean | null | undefined;
@@ -57,6 +56,8 @@ interface Expense {
   officeTransfer: number;
   balanceDriver: number;
   balanceCompany: number;
+  totalAllowances?: number;
+  billingItems?: BillingItem[];
   createdAt: string;
   updatedAt: string;
 }
@@ -70,8 +71,31 @@ interface RawBooking {
   createdAt: string;
   updatedAt: string;
   expenses?: Expense[];
+  receiving?: {
+    _id: string;
+    totalAllowances?: number;
+    billingItems?: BillingItem[];
+  };
+  primaryExpense?: {
+    _id: string;
+    totalAllowances?: number;
+    billingItems?: BillingItem[];
+  };
+  labels?: Label[];
   // Other possible fields like status can come through; index signature avoided to keep type safety.
   status?: number;
+}
+
+interface BillingItem {
+  category: string;
+  amount: number;
+  note?: string;
+}
+
+interface Label {
+  _id: string;
+  name: string;
+  color?: string;
 }
 interface ProcessedBookingBase {
   _id: string;
@@ -79,18 +103,8 @@ interface ProcessedBookingBase {
 }
 type ProcessedBooking = ProcessedBookingBase & Record<string, Primitive>;
 
-// Interface for the Driver object
-interface Driver {
-  _id: string;
-  name: string;
-  email: string;
-  mobile: string;
-  vehicleNumber: string;
-  isActive: boolean;
-  drivercode?: string;
-}
-
 export function BookingManagement() {
+  const navigate = useNavigate();
   const [rawBookings, setRawBookings] = useState<RawBooking[]>([]); // Store original API response
   const [tableHeaders, setTableHeaders] = useState<string[]>([]); // For dynamic columns
   const [processedBookings, setProcessedBookings] = useState<
@@ -99,14 +113,12 @@ export function BookingManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [selectedBookingForLabels, setSelectedBookingForLabels] = useState<string | null>(null);
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
-    null
-  );
-  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -130,19 +142,19 @@ export function BookingManagement() {
     });
   }, [baseUrl]);
 
-  const fetchDrivers = useCallback(async () => {
+  const fetchLabels = useCallback(async () => {
     try {
       const token = Cookies.get("admin_token");
       if (!token) throw new Error("No authentication token found");
-      const response = await api.get<{ drivers: Driver[] }>("admin/drivers", {
+      const response = await api.get<{ labels: Label[] }>("admin/get-labels", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setDrivers(response.data.drivers);
+      setAvailableLabels(response.data.labels || []);
     } catch (error) {
-      console.error("Error fetching drivers:", error);
+      console.error("Error fetching labels:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch drivers",
+        description: "Failed to fetch labels",
         variant: "destructive",
       });
     }
@@ -342,8 +354,8 @@ export function BookingManagement() {
 
   useEffect(() => {
     fetchBookings();
-    fetchDrivers();
-  }, [fetchBookings, fetchDrivers]);
+    fetchLabels();
+  }, [fetchBookings, fetchLabels]);
 
   const handleFileUpload = async () => {
     if (!file) {
@@ -503,6 +515,43 @@ export function BookingManagement() {
   const getExpensesForBooking = (bookingId: string) => {
     const booking = rawBookings.find((b) => b._id === bookingId);
     return booking?.expenses || [];
+  };
+
+  const updateBookingLabels = async (bookingId: string, labelIds: string[]) => {
+    try {
+      const token = Cookies.get("admin_token");
+      if (!token) throw new Error("No authentication token found");
+      await api.post(
+        `admin/add-label-booking/${bookingId}`,
+        { labels: labelIds, mode: "replace" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast({ title: "Success", description: "Labels updated successfully" });
+      fetchBookings(); // Refresh to show updated labels
+    } catch (error) {
+      console.error("Error updating labels:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update labels",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openLabelModal = (bookingId: string) => {
+    const booking = rawBookings.find((b) => b._id === bookingId);
+    setSelectedBookingForLabels(bookingId);
+    setSelectedLabels(booking?.labels?.map(l => l._id) || []);
+    setIsLabelModalOpen(true);
+  };
+
+  const handleLabelSave = () => {
+    if (selectedBookingForLabels) {
+      updateBookingLabels(selectedBookingForLabels, selectedLabels);
+      setIsLabelModalOpen(false);
+      setSelectedBookingForLabels(null);
+      setSelectedLabels([]);
+    }
   };
 
   return (
@@ -712,39 +761,67 @@ export function BookingManagement() {
                             </TableCell>
                           ))}
                           <TableCell className="sticky right-0 bg-background">
-                            {booking.driver ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold whitespace-nowrap">
-                                  {booking.driver.name}
-                                </span>
-                                <AssignDriverModal
-                                  bookingId={booking._id}
-                                  currentDriverId={booking.driver._id}
-                                  onSuccess={fetchBookings}
-                                  drivers={drivers}
-                                  action="change"
-                                />
+                            <div className="flex flex-col gap-2 min-w-[200px]">
+                              {/* Driver Info */}
+                              <div className="text-xs">
+                                <strong>Driver:</strong> {booking.driver?.name || "Not assigned"}
                               </div>
-                            ) : (
-                              <AssignDriverModal
-                                bookingId={booking._id}
-                                onSuccess={fetchBookings}
-                                drivers={drivers}
-                                action="assign"
-                              />
-                            )}
+                              
+                              {/* Expense/Receiving Summary */}
+                              <div className="text-xs space-y-1">
+                                {(() => {
+                                  const rawBooking = rawBookings.find(b => b._id === booking._id);
+                                  const expense = rawBooking?.primaryExpense || rawBooking?.expenses?.[0];
+                                  const receiving = rawBooking?.receiving;
+                                  const expenseTotal = (expense?.totalAllowances || 0) + 
+                                    (expense?.billingItems?.reduce((sum, item) => sum + item.amount, 0) || 0);
+                                  const receivingTotal = (receiving?.totalAllowances || 0) + 
+                                    (receiving?.billingItems?.reduce((sum, item) => sum + item.amount, 0) || 0);
+                                  
+                                  return (
+                                    <>
+                                      <div>Expense: ₹{expenseTotal}</div>
+                                      <div>Receiving: ₹{receivingTotal}</div>
+                                      <div className={`font-medium ${expenseTotal - receivingTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        Diff: ₹{expenseTotal - receivingTotal}
+                                      </div>
+                                    </>
+                                  );
+                                })()}
+                              </div>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="mt-2"
-                              onClick={() => {
-                                setSelectedBookingId(booking._id);
-                                setIsExpenseModalOpen(true);
-                              }}
-                            >
-                              View Expenses
-                            </Button>
+                              {/* Labels */}
+                              <div className="text-xs">
+                                <div className="flex flex-wrap gap-1 mb-1">
+                                  {(() => {
+                                    const rawBooking = rawBookings.find(b => b._id === booking._id);
+                                    return rawBooking?.labels?.map(label => (
+                                      <Badge key={label._id} variant="secondary" className="text-[10px]">
+                                        {label.name}
+                                      </Badge>
+                                    )) || <span className="text-muted-foreground">No labels</span>;
+                                  })()}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openLabelModal(booking._id)}
+                                  className="text-xs h-6"
+                                >
+                                  Edit Labels
+                                </Button>
+                              </div>
+
+                              {/* Details Button */}
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={() => navigate(`/booking/${booking._id}`)}
+                                className="text-xs h-6"
+                              >
+                                View Details
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -834,13 +911,65 @@ export function BookingManagement() {
           )}
         </CardContent>
       </Card>
-      {selectedBookingId && (
-        <ExpenseModal
-          isOpen={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
-          expenses={getExpensesForBooking(selectedBookingId)}
-        />
-      )}
+
+      {/* Label Assignment Modal */}
+      <Dialog open={isLabelModalOpen} onOpenChange={setIsLabelModalOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Assign Labels</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="border rounded-md h-64">
+              <ScrollArea className="h-full p-2">
+                {availableLabels.length ? (
+                  <div className="space-y-2">
+                    {availableLabels.map((label) => {
+                      const checked = selectedLabels.includes(label._id);
+                      return (
+                        <label
+                          key={label._id}
+                          className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(val) => {
+                              setSelectedLabels((prev) =>
+                                val
+                                  ? [...prev, label._id]
+                                  : prev.filter((id) => id !== label._id)
+                              );
+                            }}
+                          />
+                          <Badge variant="secondary" className="text-xs">
+                            {label.name}
+                          </Badge>
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground p-2">No labels available</div>
+                )}
+              </ScrollArea>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsLabelModalOpen(false);
+                  setSelectedBookingForLabels(null);
+                  setSelectedLabels([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleLabelSave}>
+                Save Labels
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isColumnModalOpen} onOpenChange={setIsColumnModalOpen}>
         <DialogContent className="max-w-lg">

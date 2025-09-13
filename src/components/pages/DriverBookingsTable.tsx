@@ -3,6 +3,23 @@ import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/hooks/use-toast";
+import { Tags } from "lucide-react";
+import { Label } from "@/components/ui/label";
+
+interface Label {
+  _id: string;
+  name: string;
+  color: string;
+  createdBy?: string;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 interface BookingDataKV {
   key: string;
@@ -91,6 +108,9 @@ interface BookingRecord {
   data: BookingDataKV[];
   primaryExpense?: PrimaryExpense | null;
   receiving?: ReceivingRecord | null;
+  labels?: Label[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 const DriverBookingsTable = () => {
@@ -98,6 +118,15 @@ const DriverBookingsTable = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  
+  // Label management state
+  const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
+  const [isLabelModalOpen, setIsLabelModalOpen] = useState(false);
+  const [selectedBookingForLabels, setSelectedBookingForLabels] = useState<string | null>(null);
+  const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
+  const [isUpdatingLabels, setIsUpdatingLabels] = useState(false);
+  
+  const { toast } = useToast();
   const token = Cookies.get("admin_token");
   const navigate = useNavigate();
   const { driverId } = useParams();
@@ -114,7 +143,9 @@ const DriverBookingsTable = () => {
           }
         );
         const payload = response.data;
+        
         const list = payload?.data || payload?.bookings || [];
+
         setBookings(list);
         if (!selectedBookingId && list.length)
           setSelectedBookingId(list[0]._id);
@@ -128,6 +159,88 @@ const DriverBookingsTable = () => {
 
     fetchDriverBookings();
   }, [driverId, token, selectedBookingId]);
+
+  // Fetch available labels
+  useEffect(() => {
+    const fetchLabels = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_BASE_UR}admin/get-labels`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setAvailableLabels(response.data.labels || []);
+      } catch (err) {
+        console.error("Failed to fetch labels:", err);
+      }
+    };
+
+    if (token) {
+      fetchLabels();
+    }
+  }, [token]);
+
+  // Label management functions
+  const openLabelModal = (booking: BookingRecord) => {
+    setSelectedBookingForLabels(booking._id);
+    setSelectedLabels(booking?.labels?.map(l => l._id) || []);
+    setIsLabelModalOpen(true);
+  };
+
+  const updateBookingLabels = async () => {
+    if (!selectedBookingForLabels) return;
+    
+    setIsUpdatingLabels(true);
+    try {
+      await axios.post(
+        `${import.meta.env.VITE_BASE_UR}admin/add-label-booking/${selectedBookingForLabels}`,
+        {
+          labels: selectedLabels,
+          mode: "replace"
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          },
+        }
+      );
+
+      toast({
+        title: "Success",
+        description: "Labels updated successfully",
+      });
+
+      // Refresh bookings to show updated labels
+      const response = await axios.get(
+        `${import.meta.env.VITE_BASE_UR}admin/driver-bookings/${driverId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      const payload = response.data;
+      const list = payload?.data || payload?.bookings || [];
+      setBookings(list);
+
+      setIsLabelModalOpen(false);
+      setSelectedBookingForLabels(null);
+      setSelectedLabels([]);
+    } catch (err) {
+      console.error("Failed to update labels:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update labels",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdatingLabels(false);
+    }
+  };
   // Major columns to display (subset)
   const headers = useMemo(() => [
     "Duty Id",
@@ -143,6 +256,9 @@ const DriverBookingsTable = () => {
     "Total Hours",
     "Price",
     "Total Price",
+    "Status",
+    "Labels",
+    "Actions",
   ], []);
 
   const selectedBooking = useMemo(
@@ -175,94 +291,211 @@ const DriverBookingsTable = () => {
           <thead className="bg-gray-50">
             <tr>
               {headers.map((header) => {
-                return (
-                  <th
-                    key={header}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    {header}
-                  </th>
-                );
+          return (
+            <th
+              key={header}
+              className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            >
+              {header}
+            </th>
+          );
               })}
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {bookings.map((booking) => (
+              console.log(booking, "booking"),
               <tr
-                key={booking._id}
-                className={`hover:bg-muted/50 cursor-pointer ${
-                  booking._id === selectedBookingId ? "bg-blue-50" : ""
-                }`}
-                onClick={() => setSelectedBookingId(booking._id)}
+          key={booking._id}
+          className={`hover:bg-muted/50 cursor-pointer ${
+            booking._id === selectedBookingId ? "bg-blue-50" : ""
+          }`}
+          onClick={() => setSelectedBookingId(booking._id)}
               >
-                {headers.map((header) => {
-                  // First try booking data
-                  const dataItem = booking.data?.find(
-                    (item) => item.key === header
-                  );
-                  let value: unknown = dataItem ? dataItem.value : undefined;
-                  if (value === undefined) {
-                    const getVal = (obj: unknown, key: string) =>
-                      obj &&
-                      typeof obj === "object" &&
-                      key in (obj as Record<string, unknown>)
-                        ? (obj as Record<string, unknown>)[key]
-                        : undefined;
-                    if (booking.primaryExpense) {
-                      const direct = getVal(booking.primaryExpense, header);
-                      if (direct !== undefined) value = direct;
-                      else if (booking.primaryExpense.receiving) {
-                        const nested = getVal(
-                          booking.primaryExpense.receiving,
-                          header
-                        );
-                        if (nested !== undefined) value = nested;
-                      }
-                    }
-                    if (value === undefined && booking.receiving) {
-                      const rVal = getVal(booking.receiving, header);
-                      if (rVal !== undefined) value = rVal;
-                    }
-                  }
-                  const display =
-                    value === null || value === undefined || value === ""
-                      ? "-"
-                      : String(value);
-                  return (
-                    <td
-                      key={`${booking._id}-${header}`}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                    >
-                      {display}
-                    </td>
-                  );
-                })}
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {booking.primaryExpense || booking.receiving ? (
+          {headers.map((header) => {
+            // Handle special columns
+            if (header === "Status") {
+              return (
+                <td
+                  key={`${booking._id}-${header}`}
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                >
+                  {booking.status === 1 ? (
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      Settled
+                    </Badge>
+                  ) : booking.status === 0 ? (
+                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                      Not Settled
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                      Status: {booking.status}
+                    </Badge>
+                  )}
+                </td>
+              );
+            }
+            
+            if (header === "Labels") {
+              return (
+                <td
+                  key={`${booking._id}-${header}`}
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                >
+                  {booking.labels && booking.labels.length > 0 ? (
+                    <div className="flex flex-wrap gap-1">
+                      {booking.labels.map((label) => (
+                        <Badge
+                          key={label._id}
+                          style={{ backgroundColor: label.color }}
+                          className="text-white text-xs"
+                        >
+                          {label.name}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 text-xs">No labels</span>
+                  )}
+                </td>
+              );
+            }
+            
+            if (header === "Actions") {
+              return (
+                <td
+                  key={`${booking._id}-${header}`}
+                  className="px-6 py-4 whitespace-nowrap text-sm"
+                >
+                  <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/booking/${booking._id}`);
+                        openLabelModal(booking);
                       }}
+                      className="flex items-center gap-1"
                     >
-                      Details
+                      <Tags className="w-3 h-3" />
+                      Labels
                     </Button>
-                  ) : (
-                    <span className="text-muted-foreground text-xs">
-                      No Expense
-                    </span>
-                  )}
+                    {booking.primaryExpense || booking.receiving ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/booking/${booking._id}`);
+                        }}
+                      >
+                        Details
+                      </Button>
+                    ) : null}
+                  </div>
                 </td>
+              );
+            }
+
+            // Regular column handling
+            const dataItem = booking.data?.find(
+              (item) => item.key === header
+            );
+            let value: unknown = dataItem ? dataItem.value : undefined;
+            if (value === undefined) {
+              const getVal = (obj: unknown, key: string) =>
+                obj &&
+                typeof obj === "object" &&
+                key in (obj as Record<string, unknown>)
+            ? (obj as Record<string, unknown>)[key]
+            : undefined;
+              if (booking.primaryExpense) {
+                const direct = getVal(booking.primaryExpense, header);
+                if (direct !== undefined) value = direct;
+                else if (booking.primaryExpense.receiving) {
+            const nested = getVal(
+              booking.primaryExpense.receiving,
+              header
+            );
+            if (nested !== undefined) value = nested;
+                }
+              }
+              if (value === undefined && booking.receiving) {
+                const rVal = getVal(booking.receiving, header);
+                if (rVal !== undefined) value = rVal;
+              }
+            }
+            const display =
+              value === null || value === undefined || value === ""
+                ? "-"
+                : String(value);
+            return (
+              <td
+                key={`${booking._id}-${header}`}
+                className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+              >
+                {display}
+              </td>
+            );
+          })}
               </tr>
             ))}
           </tbody>
         </table>
       )}
+      
+      {/* Label Assignment Modal */}
+      <Dialog open={isLabelModalOpen} onOpenChange={setIsLabelModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Assign Labels</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              Select labels for booking:
+            </div>
+            <ScrollArea className="max-h-60">
+              <div className="space-y-2">
+                {availableLabels.map((label) => (
+                  <div key={label._id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`label-${label._id}`}
+                      checked={selectedLabels.includes(label._id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedLabels((prev) => [...prev, label._id]);
+                        } else {
+                          setSelectedLabels((prev) => prev.filter((id) => id !== label._id));
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor={`label-${label._id}`}
+                      className="flex items-center space-x-2 cursor-pointer"
+                    >
+                      <Badge style={{ backgroundColor: label.color }} className="text-white">
+                        {label.name}
+                      </Badge>
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            <div className="flex justify-end space-x-2">
+              <Button variant="outline" onClick={() => setIsLabelModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                onClick={updateBookingLabels}
+                disabled={isUpdatingLabels}
+              >
+                {isUpdatingLabels ? "Updating..." : "Update Labels"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

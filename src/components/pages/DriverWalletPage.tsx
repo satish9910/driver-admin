@@ -246,11 +246,7 @@ export function DriverWalletManagement() {
     }
 
     const amount = parseFloat(deductFormData.amount);
-    if (amount > walletBalance) {
-      toast.error("Insufficient balance");
-      return;
-    }
-
+   
     try {
       setDeducting(true);
       const response = await fetch(

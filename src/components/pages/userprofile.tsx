@@ -258,51 +258,6 @@ const DriverProfile = () => {
             </div>
           </div>
         </div>
-
-        {/* Bookings Section */}
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">
-            Driver Bookings
-          </h2>
-          {Array.isArray(driverData.bookings) && driverData.bookings.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {driverData.bookings[0].data.map((item) => (
-                <th
-            key={item.key}
-            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-            {item.key}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {driverData.bookings.map((booking) => (
-              <tr key={booking._id}>
-                {booking.data.map((item) => (
-            <td
-              key={item._id}
-              className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-            >
-              {item.value !== "" && item.value !== null
-                ? item.value.toString()
-                : "N/A"}
-            </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-gray-500">No bookings found for this driver</p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
