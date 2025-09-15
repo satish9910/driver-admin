@@ -474,11 +474,11 @@ const BookingDetailPage: React.FC = () => {
           <div>
             Current: {driverBalance !== null ? `₹${driverBalance}` : "-"}
           </div>
-          {driverBalance !== null && (backendTotals?.difference ?? 0) !== 0 && (
+          {/* {driverBalance !== null && (backendTotals?.difference ?? 0) !== 0 && (
             <div className="mt-1 text-[10px]">
-              After: ₹{driverBalance + (backendTotals?.difference ?? 0)}
+              After: ₹{driverBalance  0)}
             </div>
-          )}
+          )} */}
         </div>
         <div className="border rounded p-3 bg-white flex flex-col justify-between">
           <div className="font-semibold mb-1">Wallet Action</div>

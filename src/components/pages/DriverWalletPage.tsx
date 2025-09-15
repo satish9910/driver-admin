@@ -81,8 +81,7 @@ export function DriverWalletManagement() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isDeductDialogOpen, setIsDeductDialogOpen] = useState(false);
+  const [isCollectDialogOpen, setIsCollectDialogOpen] = useState(false);
   const [currentAdmin, setCurrentAdmin] = useState<CurrentAdmin | null>(null);
   const [walletBalance, setWalletBalance] = useState(0);
   const [driver, setDriver] = useState<Driver | null>(null);
@@ -91,16 +90,11 @@ export function DriverWalletManagement() {
     totalDebit: 0,
     transactionsCount: 0,
   });
-  const [addFormData, setAddFormData] = useState({
+  const [collectFormData, setCollectFormData] = useState({
     amount: "",
-    description: "Initial balance added by admin",
+    description: "Amount collected from driver",
   });
-  const [deductFormData, setDeductFormData] = useState({
-    amount: "",
-    description: "Amount deducted by admin",
-  });
-  const [adding, setAdding] = useState(false);
-  const [deducting, setDeducting] = useState(false);
+  const [collecting, setCollecting] = useState(false);
 
   const token = Cookies.get("admin_token");
   const adminData = Cookies.get("user_data");
@@ -191,66 +185,23 @@ export function DriverWalletManagement() {
     }
   }, [driverId, fetchDriverWallet, fetchTransactions]);
 
-  const handleAddMoney = async () => {
-    if (!driverId || !addFormData.amount) {
+  const handleCollectFromDriver = async () => {
+    if (!driverId || !collectFormData.amount) {
       toast.error("Amount is required");
       return;
     }
 
-    try {
-      setAdding(true);
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/user/add-money`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            userId: driverId,
-            amount: parseFloat(addFormData.amount),
-            description: addFormData.description,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to add money");
-      }
-
-      const data = await response.json();
-      if (data) {
-        toast.success("Money added successfully");
-        setIsAddDialogOpen(false);
-        setAddFormData({
-          amount: "",
-          description: "Initial balance added by admin",
-        });
-        fetchDriverWallet();
-        fetchTransactions();
-      } else {
-        throw new Error(data.message || "Failed to add money");
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "An unknown error occurred");
-    } finally {
-      setAdding(false);
-    }
-  };
-
-  const handleDeductMoney = async () => {
-    if (!driverId || !deductFormData.amount) {
-      toast.error("Amount is required");
-      return;
-    }
-
-    const amount = parseFloat(deductFormData.amount);
+    const amount = parseFloat(collectFormData.amount);
+    
+    // if (amount > walletBalance) {
+    //   toast.error("Cannot collect more than the driver's wallet balance");
+    //   return;
+    // }
    
     try {
-      setDeducting(true);
+      setCollecting(true);
       const response = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/user/deduct-money`,
+        `${import.meta.env.VITE_BASE_UR}admin/collect-from-driver`,
         {
           method: "POST",
           headers: {
@@ -260,33 +211,32 @@ export function DriverWalletManagement() {
           body: JSON.stringify({
             userId: driverId,
             amount: amount,
-            type: "debit",
-            description: deductFormData.description,
+            description: collectFormData.description,
           }),
         }
       );
 
       if (!response.ok) {
-        throw new Error("Failed to deduct money");
+        throw new Error("Failed to collect from driver");
       }
 
       const data = await response.json();
       if (data) {
-        toast.success("Money deducted successfully");
-        setIsDeductDialogOpen(false);
-        setDeductFormData({
+        toast.success("Amount collected from driver successfully");
+        setIsCollectDialogOpen(false);
+        setCollectFormData({
           amount: "",
-          description: "Amount deducted by admin",
+          description: "Amount collected from driver",
         });
         fetchDriverWallet();
         fetchTransactions();
       } else {
-        throw new Error(data.message || "Failed to deduct money");
+        throw new Error(data.message || "Failed to collect from driver");
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "An unknown error occurred");
     } finally {
-      setDeducting(false);
+      setCollecting(false);
     }
   };
 
@@ -429,124 +379,70 @@ export function DriverWalletManagement() {
         </div>
         <div className="flex space-x-2">
           <Dialog
-            open={isAddDialogOpen}
+            open={isCollectDialogOpen}
             onOpenChange={(open) => {
-              if (!open && adding) return;
-              setIsAddDialogOpen(open);
+              if (!open && collecting) return;
+              setIsCollectDialogOpen(open);
             }}
           >
             <DialogTrigger asChild>
-              <Button variant="outline" className="bg-green-50 text-green-700 hover:bg-green-100">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Money
-              </Button>
-            </DialogTrigger>
-            <DialogContent
-              onInteractOutside={(e) => {
-                if (adding) e.preventDefault();
-              }}
-              onEscapeKeyDown={(e) => {
-                if (adding) e.preventDefault();
-              }}
-            >
-              <DialogHeader>
-                <DialogTitle>Add Money to Driver Wallet</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="amount">Amount (₹)</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={addFormData.amount}
-                    onChange={(e) => setAddFormData({ ...addFormData, amount: e.target.value })}
-                    placeholder="Enter amount"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Input
-                    id="description"
-                    value={addFormData.description}
-                    onChange={(e) => setAddFormData({ ...addFormData, description: e.target.value })}
-                    placeholder="Enter description"
-                  />
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsAddDialogOpen(false)}
-                    disabled={adding}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleAddMoney} disabled={adding}>
-                    {adding ? "Adding..." : "Add Money"}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
-            open={isDeductDialogOpen}
-            onOpenChange={(open) => {
-              if (!open && deducting) return;
-              setIsDeductDialogOpen(open);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline" className="bg-red-50 text-red-700 hover:bg-red-100">
+              <Button variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100">
                 <Minus className="h-4 w-4 mr-2" />
-                Deduct Money
+                Collect from Driver
               </Button>
             </DialogTrigger>
             <DialogContent
               onInteractOutside={(e) => {
-                if (deducting) e.preventDefault();
+                if (collecting) e.preventDefault();
               }}
               onEscapeKeyDown={(e) => {
-                if (deducting) e.preventDefault();
+                if (collecting) e.preventDefault();
               }}
             >
               <DialogHeader>
-                <DialogTitle>Deduct Money from Driver Wallet</DialogTitle>
+                <DialogTitle>Collect Money from Driver</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Available Balance:</strong> ₹{walletBalance.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    You can only collect up to the driver's current wallet balance.
+                  </p>
+                </div>
                 <div>
-                  <Label htmlFor="deduct-amount">Amount (₹)</Label>
+                  <Label htmlFor="collect-amount">Amount (₹)</Label>
                   <Input
-                    id="deduct-amount"
+                    id="collect-amount"
                     type="number"
                     min="0"
                     step="0.01"
                     max={walletBalance}
-                    value={deductFormData.amount}
-                    onChange={(e) => setDeductFormData({ ...deductFormData, amount: e.target.value })}
-                    placeholder="Enter amount"
+                    value={collectFormData.amount}
+                    onChange={(e) => setCollectFormData({ ...collectFormData, amount: e.target.value })}
+                    placeholder="Enter amount to collect"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="deduct-description">Description</Label>
+                  <Label htmlFor="collect-description">Description</Label>
                   <Input
-                    id="deduct-description"
-                    value={deductFormData.description}
-                    onChange={(e) => setDeductFormData({ ...deductFormData, description: e.target.value })}
-                    placeholder="Enter description"
+                    id="collect-description"
+                    value={collectFormData.description}
+                    onChange={(e) => setCollectFormData({ ...collectFormData, description: e.target.value })}
+                    placeholder="Enter collection reason"
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button
                     variant="outline"
-                    onClick={() => setIsDeductDialogOpen(false)}
-                    disabled={deducting}
+                    onClick={() => setIsCollectDialogOpen(false)}
+                    disabled={collecting}
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleDeductMoney} disabled={deducting}>
-                    {deducting ? "Deducting..." : "Deduct Money"}
+                  <Button onClick={handleCollectFromDriver} disabled={collecting}>
+                    {collecting ? "Collecting..." : "Collect Money"}
                   </Button>
                 </div>
               </div>
