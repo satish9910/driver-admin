@@ -13,6 +13,9 @@ interface BillingItem {
   amount: number;
   note?: string;
   image?: string | null;
+  // local-only field for uploads; not sent as JSON
+  _file?: File | null;
+  _previewUrl?: string; // for UI preview
 }
 interface DutyInfo {
   _id?: string;
@@ -184,7 +187,7 @@ const BookingDetailPage: React.FC = () => {
       setExpense(exp || null);
       setReceiving(bk.receiving || null);
       setDutyInfo(bk.dutyInfo || null);
-      console.log(bk.dutyInfo,"sdfghngfd")
+      console.log(bk,"sdfghngfd")
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
     } finally {
@@ -240,7 +243,7 @@ const BookingDetailPage: React.FC = () => {
       ...(p || {}),
       billingItems: [
         ...(p?.billingItems || []),
-        { category: "", amount: 0, note: "" },
+        { category: "", amount: 0, note: "", image: null },
       ],
     }));
   const removeBilling = (
@@ -259,29 +262,37 @@ const BookingDetailPage: React.FC = () => {
     setSavingExpense(true);
     setMsgExpense(null);
     try {
-      const {
-        dailyAllowance,
-        outstationAllowance,
-        nightAllowance,
-        notes,
-        billingItems,
-      } = expense;
-      const body = {
-        dailyAllowance,
-        outstationAllowance,
-        nightAllowance,
-        notes,
-        billingItems,
-      };
+      const { dailyAllowance, outstationAllowance, nightAllowance, notes } = expense;
+
+      // Build multipart form-data to match backend expectations
+      const form = new FormData();
+      if (dailyAllowance !== undefined) form.append("dailyAllowance", String(dailyAllowance));
+      if (outstationAllowance !== undefined) form.append("outstationAllowance", String(outstationAllowance));
+      if (nightAllowance !== undefined) form.append("nightAllowance", String(nightAllowance));
+      if (notes) form.append("notes", notes);
+
+      const items = (expense.billingItems || []).map(({ category, amount, note }) => ({
+        category,
+        amount,
+        note,
+      }));
+      form.append("billingItems", JSON.stringify(items));
+
+      // Append files using the expected keys billingItems[i].image
+      (expense.billingItems || []).forEach((bi, i) => {
+        if (bi._file) {
+          form.append(`billingItems[${i}].image`, bi._file);
+        }
+      });
+
       const res = await fetch(
         `${import.meta.env.VITE_BASE_UR}admin/update-expense-booking/${bookingId}`,
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(body),
+          body: form,
         }
       );
       if (!res.ok) throw new Error("Expense update failed");
@@ -320,7 +331,7 @@ const BookingDetailPage: React.FC = () => {
         notes,
       };
       const res = await fetch(
-        `${import.meta.env.VITE_BASE_UR}admin/update-duty-booking/${bookingId}`,
+        `${import.meta.env.VITE_BASE_UR}admin/update-receiving-booking/${bookingId}`,
         {
           method: "PUT",
           headers: {
@@ -344,37 +355,38 @@ const BookingDetailPage: React.FC = () => {
     setSavingReceiving(true);
     setMsgReceiving(null);
     try {
-      const {
-        dailyAllowance,
-        outstationAllowance,
-        nightAllowance,
-        receivedFromClient,
-        clientAdvanceAmount,
-        clientBonusAmount,
-        incentiveAmount,
-        notes,
-        billingItems,
-      } = receiving;
-      const body = {
-        dailyAllowance,
-        outstationAllowance,
-        nightAllowance,
-        receivedFromClient,
-        clientAdvanceAmount,
-        clientBonusAmount,
-        incentiveAmount,
-        notes,
-        billingItems,
-      };
+      const { dailyAllowance, outstationAllowance, nightAllowance, receivedFromClient, clientAdvanceAmount, clientBonusAmount, incentiveAmount, notes } = receiving;
+      const form = new FormData();
+      if (dailyAllowance !== undefined) form.append("dailyAllowance", String(dailyAllowance));
+      if (outstationAllowance !== undefined) form.append("outstationAllowance", String(outstationAllowance));
+      if (nightAllowance !== undefined) form.append("nightAllowance", String(nightAllowance));
+      if (receivedFromClient !== undefined) form.append("receivedFromClient", String(receivedFromClient));
+      if (clientAdvanceAmount !== undefined) form.append("clientAdvanceAmount", String(clientAdvanceAmount));
+      if (clientBonusAmount !== undefined) form.append("clientBonusAmount", String(clientBonusAmount));
+      if (incentiveAmount !== undefined) form.append("incentiveAmount", String(incentiveAmount));
+      if (notes) form.append("notes", notes);
+
+      const items = (receiving.billingItems || []).map(({ category, amount, note }) => ({
+        category,
+        amount,
+        note,
+      }));
+      form.append("billingItems", JSON.stringify(items));
+
+      (receiving.billingItems || []).forEach((bi, i) => {
+        if (bi._file) {
+          form.append(`billingItems[${i}].image`, bi._file);
+        }
+      });
+
       const res = await fetch(
         `${import.meta.env.VITE_BASE_UR}admin/update-receiving-booking/${bookingId}`,
         {
           method: "PUT",
           headers: {
-            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(body),
+          body: form,
         }
       );
       if (!res.ok) throw new Error("Receiving update failed");
@@ -830,6 +842,43 @@ const BookingDetailPage: React.FC = () => {
                   ×
                 </button>
               </div>
+              {/* Image upload + preview */}
+              <div className="sm:col-span-12 flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-[10px]"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) return;
+                    const preview = URL.createObjectURL(file);
+                    setExpense((prev) => {
+                      if (!prev) return prev;
+                      const items = [...(prev.billingItems || [])];
+                      const base = items[idx] || { category: "", amount: 0, note: "" };
+                      items[idx] = { ...base, _file: file, _previewUrl: preview } as BillingItem;
+                      // auto-add a new blank row if this is the last row
+                      if (idx === items.length - 1) {
+                        items.push({ category: "", amount: 0, note: "", image: null });
+                      }
+                      return { ...prev, billingItems: items };
+                    });
+                  }}
+                />
+                {(bi._previewUrl || bi.image) && (() => {
+                  const serverImg = bi.image
+                    ? `${import.meta.env.VITE_BASE_URL}${String(bi.image).replace(/\\\\/g, "/")}`
+                    : undefined;
+                  const src = bi._previewUrl || serverImg;
+                  return src ? (
+                    <img
+                      src={src}
+                      alt="bill"
+                      className="h-12 w-12 object-cover rounded border"
+                    />
+                  ) : null;
+                })()}
+              </div>
             </div>
           ))}
           {msgExpense && <div className="text-[11px] mt-1">{msgExpense}</div>}
@@ -1025,6 +1074,42 @@ const BookingDetailPage: React.FC = () => {
                 >
                   ×
                 </button>
+              </div>
+              {/* Image upload + preview */}
+              <div className="sm:col-span-12 flex items-center gap-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-[10px]"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    if (!file) return;
+                    const preview = URL.createObjectURL(file);
+                    setReceiving((prev) => {
+                      if (!prev) return prev;
+                      const items = [...(prev.billingItems || [])];
+                      const base = items[idx] || { category: "", amount: 0, note: "" };
+                      items[idx] = { ...base, _file: file, _previewUrl: preview } as BillingItem;
+                      if (idx === items.length - 1) {
+                        items.push({ category: "", amount: 0, note: "", image: null });
+                      }
+                      return { ...prev, billingItems: items };
+                    });
+                  }}
+                />
+                {(bi._previewUrl || bi.image) && (() => {
+                  const serverImg = bi.image
+                    ? `${import.meta.env.VITE_BASE_URL}${String(bi.image).replace(/\\\\/g, "/")}`
+                    : undefined;
+                  const src = bi._previewUrl || serverImg;
+                  return src ? (
+                    <img
+                      src={src}
+                      alt="bill"
+                      className="h-12 w-12 object-cover rounded border"
+                    />
+                  ) : null;
+                })()}
               </div>
             </div>
           ))}
