@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Calendar,
   SlidersHorizontal,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import axios from "axios";
@@ -35,6 +36,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Data modeling
 type Primitive = string | number | boolean | null | undefined;
@@ -97,6 +105,16 @@ interface Label {
   name: string;
   color?: string;
 }
+
+interface Driver {
+  _id: string;
+  name: string;
+  email: string;
+  mobile: string;
+  vehicleNumber?: string;
+  isActive: boolean;
+}
+
 interface ProcessedBookingBase {
   _id: string;
   driver: { _id: string; name: string; drivercode?: string } | null;
@@ -111,6 +129,12 @@ export function BookingManagement() {
     ProcessedBooking[]
   >([]); // Flattened data
   const [searchTerm, setSearchTerm] = useState("");
+  const [dutyId, setDutyId] = useState("");
+  const [passengerName, setPassengerName] = useState("");
+  const [passengerMobile, setPassengerMobile] = useState("");
+  const [driverName, setDriverName] = useState("");
+  const [driverCode, setDriverCode] = useState("");
+  const [assignedFilter, setAssignedFilter] = useState<"all" | "assigned" | "unassigned">("all");
   const [isLoading, setIsLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
@@ -119,10 +143,16 @@ export function BookingManagement() {
   const [selectedBookingForLabels, setSelectedBookingForLabels] = useState<string | null>(null);
   const { toast } = useToast();
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedBookingForAssignment, setSelectedBookingForAssignment] = useState<string | null>(null);
+  const [selectedDriverForAssignment, setSelectedDriverForAssignment] = useState<string>("");
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Column selection & filtering state
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
@@ -164,6 +194,8 @@ export function BookingManagement() {
     success: boolean;
     count: number;
     data: RawBooking[];
+    total?: number;
+    pages?: number;
   }
 
   interface BookingKeysApiResponse {
@@ -180,23 +212,47 @@ export function BookingManagement() {
 
       let url = "admin/bookings";
       const params = new URLSearchParams();
+      
+      // Pagination parameters
+      params.append("page", currentPage.toString());
+      params.append("limit", itemsPerPage.toString());
+      
+      // Date filters
       if (dateRange?.from && dateRange?.to) {
         params.append("startDate", format(dateRange.from, "dd-MM-yyyy"));
         params.append("endDate", format(dateRange.to, "dd-MM-yyyy"));
+      }
+      
+      // Text search filters
+      if (searchTerm) params.append("q", searchTerm);
+      if (dutyId) params.append("dutyId", dutyId);
+      if (passengerName) params.append("passengerName", passengerName);
+      if (passengerMobile) params.append("passengerMobile", passengerMobile);
+      if (driverName) params.append("driverName", driverName);
+      if (driverCode) params.append("driverCode", driverCode);
+      
+      // Assigned filter
+      if (assignedFilter !== "all") {
+        params.append("assigned", assignedFilter);
+      }
+
+      if (params.toString()) {
         url = `${url}?${params.toString()}`;
       }
 
-      const response = await api.get<BookingsApiResponse | RawBooking[]>(url, {
+      const response = await api.get<BookingsApiResponse>(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Support both old (array directly) and new (wrapped object) response shapes
-      const bookingsData: RawBooking[] = Array.isArray(response.data)
-        ? response.data
-        : (response.data as BookingsApiResponse).data;
+      // Handle the new response format with pagination
+      const bookingsData: RawBooking[] = response.data.data || [];
       setRawBookings(bookingsData);
+      
+      // Set pagination info
+      setTotalItems(response.data.total || 0);
+      setTotalPages(response.data.pages || 1);
 
-  if (bookingsData && bookingsData.length > 0) {
+      if (bookingsData && bookingsData.length > 0) {
         // 1. Get all unique keys from all bookings to create headers
         const headersSet = new Set<string>();
         bookingsData.forEach((booking) => {
@@ -245,7 +301,7 @@ export function BookingManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [api, dateRange, toast]);
+  }, [api, dateRange, currentPage, itemsPerPage, searchTerm, dutyId, passengerName, passengerMobile, driverName, driverCode, assignedFilter, toast]);
 
   // Fetch all available booking keys (column names) for selector
   const fetchBookingKeys = useCallback(async () => {
@@ -345,6 +401,22 @@ export function BookingManagement() {
     toast({ title: "Filters cleared" });
   };
 
+  const clearAllFilters = async () => {
+    setSearchTerm("");
+    setDutyId("");
+    setPassengerName("");
+    setPassengerMobile("");
+    setDriverName("");
+    setDriverCode("");
+    setAssignedFilter("all");
+    setDateRange(undefined);
+    setIsFilteredMode(false);
+    setSelectedKeys([]);
+    setCurrentPage(1); // Reset to first page
+    await fetchBookings();
+    toast({ title: "Filters cleared" });
+  };
+
   // When opening modal first time, fetch keys
   useEffect(() => {
     if (isColumnModalOpen && !allKeys.length && !isFetchingKeys) {
@@ -421,13 +493,8 @@ export function BookingManagement() {
     return { totalRevenue, totalBookings, totalKms };
   }, [filteredBookings]);
 
-  // Pagination calculations
-  const totalItems = filteredBookings.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const currentBookings = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredBookings.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredBookings, currentPage, itemsPerPage]);
+  // Use backend pagination
+  const currentBookings = processedBookings;
 
   // Handle page changes
   const goToPage = (page: number) => {
@@ -435,6 +502,16 @@ export function BookingManagement() {
       setCurrentPage(page);
     }
   };
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateRange, dutyId, passengerName, passengerMobile, driverName, driverCode, assignedFilter]);
+
+  // Fetch bookings when filters or pagination changes
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings, currentPage]);
 
   const handleExport = async () => {
     try {
@@ -554,6 +631,97 @@ export function BookingManagement() {
     }
   };
 
+  const fetchDrivers = useCallback(async () => {
+    try {
+      const token = Cookies.get("admin_token");
+      if (!token) throw new Error("No authentication token found");
+      
+      const response = await api.get("admin/drivers", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      // The API returns drivers in a "drivers" property
+      setDrivers(response.data.drivers || response.data);
+    } catch (error) {
+      console.error("Error fetching drivers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch drivers",
+        variant: "destructive",
+      });
+    }
+  }, [api, toast]);
+
+  const handleAssignDriverClick = (bookingId: string) => {
+    setSelectedBookingForAssignment(bookingId);
+    setSelectedDriverForAssignment("");
+    fetchDrivers();
+    setIsAssignModalOpen(true);
+  };
+
+  const handleDriverAssigned = async () => {
+    if (!selectedBookingForAssignment || !selectedDriverForAssignment) {
+      toast({
+        title: "Error",
+        description: "Please select a driver",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const token = Cookies.get("admin_token");
+      if (!token) throw new Error("No authentication token found");
+
+      await api.put(
+        "admin/assign-driver",
+        {
+          bookingId: selectedBookingForAssignment,
+          driverId: selectedDriverForAssignment,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      toast({
+        title: "Success",
+        description: "Driver assigned successfully",
+      });
+
+      // Refresh bookings after assignment
+      fetchBookings();
+      setIsAssignModalOpen(false);
+      setSelectedBookingForAssignment(null);
+      setSelectedDriverForAssignment("");
+    } catch (error) {
+      console.error("Error assigning driver:", error);
+      toast({
+        title: "Error",
+        description: "Failed to assign driver",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((searchValue: string) => {
+      setSearchTerm(searchValue);
+      setCurrentPage(1); // Reset to first page when search changes
+    }, 500),
+    []
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    debouncedSearch(value);
+  };
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Stats Cards */}
@@ -612,95 +780,175 @@ export function BookingManagement() {
         </CardContent>
       </Card>
 
-      {/* Header with Search and Date Picker */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto">
-          <Popover>
-            <PopoverTrigger asChild>
+      {/* Advanced Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Advanced Filters
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Duty ID Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Duty ID</label>
+              <Input
+                placeholder="Enter duty ID"
+                value={dutyId}
+                onChange={(e) => setDutyId(e.target.value)}
+              />
+            </div>
+            
+            {/* Passenger Name Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Passenger Name</label>
+              <Input
+                placeholder="Enter passenger name"
+                value={passengerName}
+                onChange={(e) => setPassengerName(e.target.value)}
+              />
+            </div>
+            
+            {/* Passenger Mobile Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Passenger Mobile</label>
+              <Input
+                placeholder="Enter passenger mobile"
+                value={passengerMobile}
+                onChange={(e) => setPassengerMobile(e.target.value)}
+              />
+            </div>
+            
+            {/* Driver Name Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Driver Name</label>
+              <Input
+                placeholder="Enter driver name"
+                value={driverName}
+                onChange={(e) => setDriverName(e.target.value)}
+              />
+            </div>
+            
+            {/* Driver Code Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Driver Code</label>
+              <Input
+                placeholder="Enter driver code"
+                value={driverCode}
+                onChange={(e) => setDriverCode(e.target.value)}
+              />
+            </div>
+            
+            {/* Assigned Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Assignment Status</label>
+              <Select value={assignedFilter} onValueChange={(value: "all" | "assigned" | "unassigned") => setAssignedFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Bookings</SelectItem>
+                  <SelectItem value="assigned">Assigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Date Range Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Date Range</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        `${format(dateRange.from, "MMM dd, yyyy")} - ${format(
+                          dateRange.to,
+                          "MMM dd, yyyy"
+                        )}`
+                      ) : (
+                        format(dateRange.from, "MMM dd, yyyy")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarPicker
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            
+            {/* Clear Filters Button */}
+            <div className="flex items-end">
               <Button
                 variant="outline"
-                className="w-full sm:w-[280px] justify-start text-left font-normal"
+                onClick={clearAllFilters}
+                className="w-full"
               >
-                <Calendar className="mr-2 h-4 w-4" />
-                {dateRange?.from ? (
-                  dateRange.to ? (
-                    `${format(dateRange.from, "MMM dd, yyyy")} - ${format(
-                      dateRange.to,
-                      "MMM dd, yyyy"
-                    )}`
-                  ) : (
-                    format(dateRange.from, "MMM dd, yyyy")
-                  )
-                ) : (
-                  <span>Pick a date range</span>
-                )}
+                Clear All Filters
               </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
-              <CalendarPicker
-                mode="range"
-                selected={dateRange}
-                onSelect={setDateRange}
-                numberOfMonths={2}
+            </div>
+          </div>
+          
+          {/* Search and Apply Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mt-4 pt-4 border-t">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="General search across all fields..."
+                defaultValue={searchTerm}
+                onChange={handleSearchChange}
+                className="w-full pl-10"
               />
-            </PopoverContent>
-          </Popover>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setDateRange(undefined);
-              setCurrentPage(1);
-            }}
-            className="w-full sm:w-auto"
-          >
-            Clear
-          </Button>
-        </div>
-
-        <div className="relative w-full sm:w-auto">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search bookings..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10"
-          />
-        </div>
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto gap-2"
-            onClick={() => setIsColumnModalOpen(true)}
-          >
-            <SlidersHorizontal className="h-4 w-4" /> Columns
-          </Button>
-          {isFilteredMode && (
-            <Button
-              variant="secondary"
-              className="w-full sm:w-auto"
-              onClick={clearFilters}
-              disabled={isLoading}
-            >
-              Clear Filters
-            </Button>
-          )}
-        </div>
-
-        {/* <Button
-          variant="outline"
-          onClick={handleExport}
-          disabled={isLoading}
-          className="w-full sm:w-auto"
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export Data
-        </Button> */}
-
-      </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setCurrentPage(1); // Reset to first page when applying filters
+                  fetchBookings();
+                }}
+                disabled={isLoading}
+                className="gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Apply Filters
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setIsColumnModalOpen(true)}
+              >
+                <SlidersHorizontal className="h-4 w-4" /> Columns
+              </Button>
+              
+              {isFilteredMode && (
+                <Button
+                  variant="secondary"
+                  className="gap-2"
+                  onClick={clearFilters}
+                  disabled={isLoading}
+                >
+                  Clear Column Filters
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Bookings Table - DYNAMIC RENDERING */}
       <Card>
@@ -765,6 +1013,16 @@ export function BookingManagement() {
                               {/* Driver Info */}
                               <div className="text-xs">
                                 <strong>Driver:</strong> {booking.driver?.name || "Not assigned"}
+                                {!booking.driver && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleAssignDriverClick(booking._id)}
+                                    className="text-xs h-6 ml-2"
+                                  >
+                                    Assign Driver
+                                  </Button>
+                                )}
                               </div>
                               
                               {/* Expense/Receiving Summary */}
@@ -841,7 +1099,7 @@ export function BookingManagement() {
 
               {/* Pagination Controls */}
               {totalItems > itemsPerPage && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="text-sm text-muted-foreground">
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                     {Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
@@ -911,6 +1169,77 @@ export function BookingManagement() {
           )}
         </CardContent>
       </Card>
+
+      {/* Driver Assignment Modal */}
+      <Dialog open={isAssignModalOpen} onOpenChange={(open) => {
+        setIsAssignModalOpen(open);
+        if (!open) {
+          setSelectedBookingForAssignment(null);
+          setSelectedDriverForAssignment("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Assign Driver</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Available Drivers</h4>
+              <div className="border rounded-md divide-y max-h-60 overflow-y-auto">
+                {drivers.length > 0 ? (
+                  drivers.map((driver) => (
+                    <div
+                      key={driver._id}
+                      className={`p-3 flex items-center justify-between cursor-pointer ${
+                        selectedDriverForAssignment === driver._id ? "bg-gray-100" : "hover:bg-gray-50"
+                      }`}
+                      onClick={() => setSelectedDriverForAssignment(driver._id)}
+                    >
+                      <div>
+                        <p className="font-medium">{driver.name}</p>
+                        <p className="text-sm text-gray-600">{driver.mobile}</p>
+                        {driver.vehicleNumber && (
+                          <p className="text-xs text-gray-500">
+                            Vehicle: {driver.vehicleNumber}
+                          </p>
+                        )}
+                      </div>
+                      <input
+                        type="radio"
+                        checked={selectedDriverForAssignment === driver._id}
+                        onChange={() => setSelectedDriverForAssignment(driver._id)}
+                        className="h-4 w-4 text-primary focus:ring-primary"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    No drivers available
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAssignModalOpen(false);
+                  setSelectedBookingForAssignment(null);
+                  setSelectedDriverForAssignment("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleDriverAssigned}
+                disabled={!selectedDriverForAssignment}
+              >
+                Assign Driver
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Label Assignment Modal */}
       <Dialog open={isLabelModalOpen} onOpenChange={setIsLabelModalOpen}>
@@ -1051,4 +1380,13 @@ export function BookingManagement() {
 
     </div>
   );
+}
+
+// Debounce function
+function debounce<T extends (...args: unknown[]) => void>(func: T, delay: number) {
+  let timeoutId: NodeJS.Timeout;
+  return function (...args: Parameters<T>) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
 }

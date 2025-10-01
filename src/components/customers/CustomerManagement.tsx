@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +47,43 @@ import {
   Upload,
   Wallet,
   Calendar,
+  Filter,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface DriverWallet {
+  balance: number;
+}
+
+interface SettlementStats {
+  settledCount: number;
+  unsettledCount: number;
+  totalBookings: number;
+  settlementRate: string;
+}
+
+interface Driver {
+  _id: string;
+  name: string;
+  email: string;
+  mobile: string;
+  drivercode: string;
+  profilePicture?: string;
+  isActive: boolean;
+  createdAt: string;
+  wallet?: DriverWallet;
+  settlementStats?: SettlementStats;
+}
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -80,12 +112,17 @@ const getStatusBadge = (isActive) => {
 };
 
 export function DriverManagement() {
-  const [drivers, setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentDriver, setCurrentDriver] = useState(null);
-  const [profilePicture, setProfilePicture] = useState(null);
+  const [currentDriver, setCurrentDriver] = useState<Driver | null>(null);
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [settlementFilter, setSettlementFilter] = useState<"all" | "settled" | "unsettled">("all");
+  const [walletMin, setWalletMin] = useState<string>("");
+  const [walletMax, setWalletMax] = useState<string>("");
+  const [activeStatusFilter, setActiveStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  
   const token = Cookies.get("admin_token");
   const navigation = useNavigate();
   const form = useForm({
@@ -99,16 +136,37 @@ export function DriverManagement() {
     },
   });
 
-  const fetchDrivers = async () => {
+  const fetchDrivers = useCallback(async () => {
     try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_BASE_UR}admin/drivers`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Build query parameters
+      const params = new URLSearchParams();
+      
+      // Add settlement filter
+      if (settlementFilter !== "all") {
+        params.append("settlement", settlementFilter);
+      }
+      
+      // Add wallet filters
+      if (walletMin) {
+        params.append("walletMin", walletMin);
+      }
+      
+      if (walletMax) {
+        params.append("walletMax", walletMax);
+      }
+      
+      // Add active status filter
+      if (activeStatusFilter !== "all") {
+        params.append("isActive", activeStatusFilter === "active" ? "true" : "false");
+      }
+      
+      const url = `${import.meta.env.VITE_BASE_UR}admin/drivers${params.toString() ? `?${params.toString()}` : ""}`;
+      
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (response.data) {
         setDrivers(response.data.drivers);
@@ -132,11 +190,11 @@ export function DriverManagement() {
         variant: "destructive",
       });
     }
-  };
+  }, [token, settlementFilter, walletMin, walletMax, activeStatusFilter]);
 
   useEffect(() => {
     fetchDrivers();
-  }, []);
+  }, [fetchDrivers]);
 
   const handleEditDriver = (driver) => {
     setCurrentDriver(driver);
@@ -160,6 +218,18 @@ export function DriverManagement() {
       password: "",
     });
     setIsEditDialogOpen(true);
+  };
+
+  const applyFilters = () => {
+    fetchDrivers();
+  };
+
+  const clearFilters = () => {
+    setSettlementFilter("all");
+    setWalletMin("");
+    setWalletMax("");
+    setSearchTerm("");
+    setActiveStatusFilter("all");
   };
 
   const filteredDrivers = drivers?.filter((driver) =>
@@ -289,26 +359,192 @@ export function DriverManagement() {
     // Navigate to the driver bookings page
     navigation(`/driver-bookings/${driverId}`);
   };
+
+  const handleSettleDriver = async (driverId) => {
+    try {
+      const token = Cookies.get("authToken");
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/admin/drivers/${driverId}/settle`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.data) {
+        toast({
+          title: "Success",
+          description: "Driver bookings settled successfully",
+        });
+        fetchDrivers(); // Refresh the data
+      }
+    } catch (error) {
+      console.error("Error settling driver:", error);
+      toast({
+        title: "Error",
+        description: "Failed to settle driver bookings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUnSettleDriver = async (driverId) => {
+    try {
+      const token = Cookies.get("authToken");
+      const response = await axios.post(
+        `${import.meta.env.VITE_BASE_URL}/admin/drivers/${driverId}/unsettle`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      
+      if (response.data) {
+        toast({
+          title: "Success",
+          description: "Driver bookings unsettled successfully",
+        });
+        fetchDrivers(); // Refresh the data
+      }
+    } catch (error) {
+      console.error("Error unsettling driver:", error);
+      toast({
+        title: "Error",
+        description: "Failed to unsettle driver bookings",
+        variant: "destructive",
+      });
+    }
+  };
   
+  const toggleDriverStatus = async (driverId, currentStatus) => {
+    try {
+      const response = await axios.patch(
+        `${import.meta.env.VITE_BASE_UR}admin/drivers/${driverId}/active`,
+        { isActive: !currentStatus },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      
+      if (response.data) {
+        toast({
+          title: "Success",
+          description: response.data.message,
+        });
+        await fetchDrivers(); // Refresh the data
+      }
+    } catch (error) {
+      console.error("Error toggling driver status:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to toggle driver status",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header with Search */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search drivers..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-64 pl-10"
-            />
+      {/* Header with Search and Filters */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search drivers..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-64 pl-10"
+              />
+            </div>
           </div>
+          <Button onClick={handleCreateDriver}>
+            Add New Driver
+          </Button>
         </div>
-        <Button onClick={handleCreateDriver}>
-          Add New Driver
-        </Button>
+
+        {/* Filter Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Settlement Filter */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Settlement Status</label>
+                <Select value={settlementFilter} onValueChange={(value: "all" | "settled" | "unsettled") => setSettlementFilter(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="settled">Settled</SelectItem>
+                    <SelectItem value="unsettled">Unsettled</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Active Status Filter */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Active Status</label>
+                <Select value={activeStatusFilter} onValueChange={(value: "all" | "active" | "inactive") => setActiveStatusFilter(value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Drivers</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Wallet Min Filter */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Min Wallet Balance</label>
+                <Input
+                  type="number"
+                  placeholder="Enter minimum balance"
+                  value={walletMin}
+                  onChange={(e) => setWalletMin(e.target.value)}
+                />
+              </div>
+              
+              {/* Wallet Max Filter */}
+              <div>
+                <label className="text-sm font-medium mb-1 block">Max Wallet Balance</label>
+                <Input
+                  type="number"
+                  placeholder="Enter maximum balance"
+                  value={walletMax}
+                  onChange={(e) => setWalletMax(e.target.value)}
+                />
+              </div>
+              
+              {/* Filter Actions */}
+              <div className="flex items-end gap-2">
+                <Button onClick={applyFilters} className="flex-1">
+                  Apply Filters
+                </Button>
+                <Button variant="outline" onClick={clearFilters} className="flex-1">
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Edit/Add Driver Modal */}
@@ -472,9 +708,11 @@ export function DriverManagement() {
                 <TableHead>Profile Picture</TableHead>
                 <TableHead>Driver Code</TableHead>
                 <TableHead>Driver Name</TableHead>
-                <TableHead>Email</TableHead>
+               
                 <TableHead>Mobile</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Wallet</TableHead>
+                <TableHead>Settlement Stats</TableHead>
                 <TableHead>Join Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -497,9 +735,31 @@ export function DriverManagement() {
 
                   <TableCell>{driver.drivercode || "-"}</TableCell>
                   <TableCell className="font-medium">{driver.name}</TableCell>
-                  <TableCell>{driver.email}</TableCell>
+                  
                   <TableCell>{driver.mobile}</TableCell>
                   <TableCell>{getStatusBadge(driver.isActive)}</TableCell>
+                  <TableCell>
+                    <div className="text-center">
+                      <p className="font-medium text-green-600">
+                        ₹{(driver.wallet?.balance || 0).toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex gap-2">
+                        <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          Settled: {driver.settlementStats?.settledCount || 0}
+                        </Badge>
+                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                          Unsettled: {driver.settlementStats?.unsettledCount || 0}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        Rate: {driver.settlementStats?.settlementRate || "0%"}
+                      </p>
+                    </div>
+                  </TableCell>
                   <TableCell>
                     {new Date(driver.createdAt).toLocaleDateString()}
                   </TableCell>
@@ -530,6 +790,39 @@ export function DriverManagement() {
                             <Wallet className="mr-2 h-4 w-4" />
                             View Wallet
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleDriverStatus(driver._id, driver.isActive)}
+                          >
+                            {driver.isActive ? (
+                              <>
+                                <X className="mr-2 h-4 w-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          {/* {(driver.settlementStats?.unsettledCount || 0) > 0 && (
+                            <DropdownMenuItem
+                              onClick={() => handleSettleDriver(driver._id)}
+                              className="text-green-600"
+                            >
+                              <Check className="mr-2 h-4 w-4" />
+                              Settle Bookings
+                            </DropdownMenuItem>
+                          )}
+                          {(driver.settlementStats?.settledCount || 0) > 0 && (
+                            <DropdownMenuItem
+                              onClick={() => handleUnSettleDriver(driver._id)}
+                              className="text-orange-600"
+                            >
+                              <X className="mr-2 h-4 w-4" />
+                              Unsettle Bookings
+                            </DropdownMenuItem>
+                          )} */}
                           <DropdownMenuItem
                             onClick={() => handleEditDriver(driver)}
                           >

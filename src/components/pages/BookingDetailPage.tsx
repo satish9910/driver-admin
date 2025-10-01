@@ -17,6 +17,7 @@ interface BillingItem {
   _file?: File | null;
   _previewUrl?: string; // for UI preview
 }
+
 interface DutyInfo {
   _id?: string;
   dutyStartDate?: string;
@@ -138,6 +139,11 @@ const BookingDetailPage: React.FC = () => {
     forceSettlement: false
   });
   const [isSettling, setIsSettling] = useState(false);
+  
+  // Image modal state
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState<string>("");
+  
   // derived totals recomputed from editable state
   const expenseBillingSum = (expense?.billingItems || []).reduce(
     (s, b) => s + Number(b.amount || 0),
@@ -164,6 +170,11 @@ const BookingDetailPage: React.FC = () => {
       : serverDifference > 0
       ? `Add ₹${serverDifference}`
       : `Deduct ₹${Math.abs(serverDifference)}`;
+
+  const openImageModal = (imageSrc: string) => {
+    setModalImageSrc(imageSrc);
+    setIsImageModalOpen(true);
+  };
 
   const fetchBooking = useCallback(async () => {
     if (!bookingId) return;
@@ -457,14 +468,14 @@ const BookingDetailPage: React.FC = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-xs">
         <div className="border rounded p-3 bg-white">
           <div className="font-semibold mb-1">Expense</div>
-          <div>Billing: ₹{backendTotals?.expense.billingSum ?? 0}</div>
-          <div>Allowances: ₹{backendTotals?.expense.totalAllowances ?? 0}</div>
+          <div>Billing Items: ₹{backendTotals?.expense.billingSum ?? 0}</div>
+          <div>Driver Allowances: ₹{backendTotals?.expense.totalAllowances ?? 0}</div>
           <div className="font-medium">Total: ₹{backendTotals?.expense.totalExpense ?? 0}</div>
         </div>
         <div className="border rounded p-3 bg-white">
           <div className="font-semibold mb-1">Receiving</div>
-          <div>Billing: ₹{backendTotals?.receiving?.receivingBillingSum ?? 0}</div>
-          <div>Allowances: ₹{backendTotals?.receiving?.receivingAllowances ?? 0}</div>
+          <div>Billing Items: ₹{backendTotals?.receiving?.receivingBillingSum ?? 0}</div>
+          <div>DriverAllowances: ₹{backendTotals?.receiving?.receivingAllowances ?? 0}</div>
           <div>Received: ₹{backendTotals?.receiving?.receivingAmount ?? 0}</div>
           <div className="font-medium">Total: ₹{backendTotals?.receiving?.totalReceiving ?? 0}</div>
         </div>
@@ -867,14 +878,15 @@ const BookingDetailPage: React.FC = () => {
                 />
                 {(bi._previewUrl || bi.image) && (() => {
                   const serverImg = bi.image
-                    ? `${import.meta.env.VITE_BASE_URL}${String(bi.image).replace(/\\\\/g, "/")}`
+                    ? `${import.meta.env.VITE_BASE_URL_IMG}${String(bi.image).replace(/\\\\/g, "/")}`
                     : undefined;
                   const src = bi._previewUrl || serverImg;
                   return src ? (
                     <img
                       src={src}
                       alt="bill"
-                      className="h-12 w-12 object-cover rounded border"
+                      className="h-12 w-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => openImageModal(src)}
                     />
                   ) : null;
                 })()}
@@ -1099,14 +1111,15 @@ const BookingDetailPage: React.FC = () => {
                 />
                 {(bi._previewUrl || bi.image) && (() => {
                   const serverImg = bi.image
-                    ? `${import.meta.env.VITE_BASE_URL}${String(bi.image).replace(/\\\\/g, "/")}`
+                    ? `${import.meta.env.VITE_BASE_URL_IMG}${String(bi.image).replace(/\\\\/g, "/")}`
                     : undefined;
                   const src = bi._previewUrl || serverImg;
                   return src ? (
                     <img
                       src={src}
                       alt="bill"
-                      className="h-12 w-12 object-cover rounded border"
+                      className="h-12 w-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => openImageModal(src)}
                     />
                   ) : null;
                 })()}
@@ -1268,6 +1281,24 @@ const BookingDetailPage: React.FC = () => {
               >
                 {isSettling ? "Settling..." : "Settle Booking"}
               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Modal */}
+      <Dialog open={isImageModalOpen} onOpenChange={setIsImageModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>Full Image View</DialogTitle>
+          </DialogHeader>
+          <div className="p-6 pt-4">
+            <div className="flex justify-center">
+              <img
+                src={modalImageSrc}
+                alt="Full size bill"
+                className="max-w-full max-h-[70vh] object-contain rounded border"
+              />
             </div>
           </div>
         </DialogContent>

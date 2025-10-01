@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import axios from "axios";
 import Cookies from "js-cookie";
 import { useParams, useNavigate } from "react-router-dom";
@@ -8,11 +8,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
-import { Tags, Calendar, Filter } from "lucide-react";
+import { Tags, Search, Calendar, Filter } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "@/components/ui/calendar";
 
 interface Label {
   _id: string;
@@ -29,14 +42,12 @@ interface BookingDataKV {
   value: string | number | null;
   _id: string;
 }
-
 interface BillingItem {
   category: string;
   amount: number;
   note?: string;
   image?: string | null;
 }
-
 interface PrimaryExpense {
   _id?: string;
   userId?: string;
@@ -59,6 +70,7 @@ interface PrimaryExpense {
   extraDutyAllowance?: number;
   notes?: string;
   totalAllowances?: number;
+  // legacy aggregate fields if still returned by API
   driverCharge?: number;
   cashToll?: number;
   cashParking?: number;
@@ -78,9 +90,8 @@ interface PrimaryExpense {
     amount: number;
     date: string;
   }[];
-  receiving?: Record<string, unknown>;
+  receiving?: Record<string, unknown>; // legacy nested
 }
-
 interface ReceivingRecord {
   _id?: string;
   userId?: string;
@@ -107,7 +118,6 @@ interface ReceivingRecord {
   totalAllowances?: number;
   [k: string]: unknown;
 }
-
 interface BookingRecord {
   _id: string;
   status: number;
@@ -119,25 +129,26 @@ interface BookingRecord {
   updatedAt?: string;
 }
 
-interface FilterState {
-  settled?: boolean;
-  endDate?: string;
-}
-
-interface ApiResponse {
-  success: boolean;
-  data?: BookingRecord[];
-  bookings?: BookingRecord[];
-}
-
 const DriverBookingsTable = () => {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
   // Filter state
-  const [filters, setFilters] = useState<FilterState>({});
+  const [dutyId, setDutyId] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [settledFilter, setSettledFilter] = useState<"all" | "true" | "false">("all");
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
+    from: undefined,
+    to: undefined
+  });
   
   // Label management state
   const [availableLabels, setAvailableLabels] = useState<Label[]>([]);
@@ -151,52 +162,59 @@ const DriverBookingsTable = () => {
   const navigate = useNavigate();
   const { driverId } = useParams();
 
-  useEffect(() => {
-    const fetchDriverBookings = async () => {
+  const fetchDriverBookings = useCallback(async () => {
+    try {
       setLoading(true);
-      try {
-        const params = new URLSearchParams();
-        
-        // Add filter parameters
-        if (filters.settled !== undefined) {
-          params.append('settled', filters.settled.toString());
-        }
-        if (filters.endDate) {
-          params.append('endDate', filters.endDate);
-        }
-        
-        const response = await axios.get(
-          `${import.meta.env.VITE_BASE_UR}admin/driver-bookings/${driverId}?${params.toString()}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        
-        const payload: ApiResponse = response.data;
-        const list = payload?.data || payload?.bookings || [];
-
-        setBookings(list);
-        
-        if (!selectedBookingId && list.length) {
-          setSelectedBookingId(list[0]._id);
-        }
-        
-        setError(null);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Failed to load bookings";
-        setError(msg);
-        console.error('Error fetching driver bookings:', err);
-      } finally {
-        setLoading(false);
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append("page", currentPage.toString());
+      params.append("limit", itemsPerPage.toString());
+      
+      if (dutyId) params.append("dutyId", dutyId);
+      if (searchTerm) params.append("q", searchTerm);
+      if (settledFilter !== "all") params.append("settled", settledFilter);
+      
+      // Format dates to match backend expectations (dd-MM-yyyy)
+      if (dateRange.from) {
+        const formattedFrom = format(dateRange.from, "dd-MM-yyyy");
+        params.append("startDate", formattedFrom);
       }
-    };
-
-    if (driverId && token) {
-      fetchDriverBookings();
+      if (dateRange.to) {
+        const formattedTo = format(dateRange.to, "dd-MM-yyyy");
+        params.append("endDate", formattedTo);
+      }
+      
+      const url = `${import.meta.env.VITE_BASE_UR}admin/driver-bookings/${driverId}?${params.toString()}`;
+      
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      const payload = response.data;
+      const list = payload?.bookings || [];
+      
+      setBookings(list);
+      setTotalItems(payload.pagination?.total || 0);
+      setTotalPages(payload.pagination?.pages || 1);
+      
+      if (!selectedBookingId && list.length)
+        setSelectedBookingId(list[0]._id);
+      
+      setError(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to load";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-  }, [driverId, token, filters]);
+  }, [driverId, token, selectedBookingId, currentPage, itemsPerPage, dutyId, searchTerm, settledFilter, dateRange]);
+
+  useEffect(() => {
+    fetchDriverBookings();
+  }, [fetchDriverBookings]);
 
   // Fetch available labels
   useEffect(() => {
@@ -253,26 +271,7 @@ const DriverBookingsTable = () => {
       });
 
       // Refresh bookings to show updated labels
-      const params = new URLSearchParams();
-      
-      if (filters.settled !== undefined) {
-        params.append('settled', filters.settled.toString());
-      }
-      if (filters.endDate) {
-        params.append('endDate', filters.endDate);
-      }
-      
-      const response = await axios.get(
-        `${import.meta.env.VITE_BASE_UR}admin/driver-bookings/${driverId}?${params.toString()}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const payload: ApiResponse = response.data;
-      const list = payload?.data || payload?.bookings || [];
-      setBookings(list);
+      await fetchDriverBookings();
 
       setIsLabelModalOpen(false);
       setSelectedBookingForLabels(null);
@@ -288,24 +287,64 @@ const DriverBookingsTable = () => {
       setIsUpdatingLabels(false);
     }
   };
-
-  // Filter handlers
-  const handleSettledChange = (settled: string) => {
-    setFilters(prev => ({
-      ...prev,
-      settled: settled === "all" ? undefined : settled === "true",
-    }));
+  
+  const applyFilters = () => {
+    setCurrentPage(1); // Reset to first page when applying filters
+    fetchDriverBookings();
   };
-
-  const handleEndDateChange = (endDate: string) => {
-    setFilters(prev => ({
-      ...prev,
-      endDate: endDate || undefined,
-    }));
-  };
-
+  
   const clearFilters = () => {
-    setFilters({});
+    setDutyId("");
+    setSearchTerm("");
+    setSettledFilter("all");
+    setDateRange({ from: undefined, to: undefined });
+    setCurrentPage(1);
+  };
+  
+  // Pagination functions
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+  
+  const getVisiblePages = () => {
+    const visiblePages = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        visiblePages.push(i);
+      }
+    } else {
+      const half = Math.floor(maxVisiblePages / 2);
+      let start = Math.max(1, currentPage - half);
+      const end = Math.min(totalPages, start + maxVisiblePages - 1);
+
+      if (end - start + 1 < maxVisiblePages) {
+        start = Math.max(1, end - maxVisiblePages + 1);
+      }
+
+      if (start > 1) {
+        visiblePages.push(1);
+        if (start > 2) {
+          visiblePages.push("...");
+        }
+      }
+
+      for (let i = start; i <= end; i++) {
+        visiblePages.push(i);
+      }
+
+      if (end < totalPages) {
+        if (end < totalPages - 1) {
+          visiblePages.push("...");
+        }
+        visiblePages.push(totalPages);
+      }
+    }
+
+    return visiblePages;
   };
 
   // Major columns to display (subset)
@@ -332,60 +371,105 @@ const DriverBookingsTable = () => {
     () => bookings.find((b) => b._id === selectedBookingId),
     [bookings, selectedBookingId]
   );
-
+  
   return (
-    <div className="space-y-6">
-      {/* Filters */}
+    <div className="space-y-6 p-6">
+      {/* Filters Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
-            Filters
+            <Filter className="h-5 w-5" />
+            Booking Filters
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Settled Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="settled-filter">Settlement</Label>
-              <Select
-                value={filters.settled?.toString() || "all"}
-                onValueChange={handleSettledChange}
-              >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Duty ID Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Duty ID</label>
+              <Input
+                placeholder="Enter duty ID"
+                value={dutyId}
+                onChange={(e) => setDutyId(e.target.value)}
+              />
+            </div>
+            
+            {/* Search Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search bookings..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            
+            {/* Settled Status Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Settlement Status</label>
+              <Select value={settledFilter} onValueChange={(value: "all" | "true" | "false") => setSettledFilter(value)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All" />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="all">All Bookings</SelectItem>
                   <SelectItem value="true">Settled</SelectItem>
                   <SelectItem value="false">Not Settled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-
-            {/* End Date Filter */}
-            <div className="space-y-2">
-              <Label htmlFor="end-date">End Date</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="end-date"
-                  type="date"
-                  value={filters.endDate || ""}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            
+            {/* Date Range Filter */}
+            <div>
+              <label className="text-sm font-medium mb-1 block">Date Range</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        `${format(dateRange.from, "MMM dd, yyyy")} - ${format(
+                          dateRange.to,
+                          "MMM dd, yyyy"
+                        )}`
+                      ) : (
+                        format(dateRange.from, "MMM dd, yyyy")
+                      )
+                    ) : (
+                      <span>Pick a date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <CalendarIcon
+                    mode="range"
+                    selected={{
+                      from: dateRange.from,
+                      to: dateRange.to
+                    }}
+                    onSelect={(range) => setDateRange({
+                      from: range?.from,
+                      to: range?.to
+                    })}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-
-            {/* Clear Filters */}
-            <div className="space-y-2">
-              <Label>&nbsp;</Label>
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-                className="w-full"
-              >
+            
+            {/* Filter Actions */}
+            <div className="flex items-end gap-2 lg:col-span-4">
+              <Button onClick={applyFilters}>
+                Apply Filters
+              </Button>
+              <Button variant="outline" onClick={clearFilters}>
                 Clear Filters
               </Button>
             </div>
@@ -393,189 +477,256 @@ const DriverBookingsTable = () => {
         </CardContent>
       </Card>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        {loading && (
-          <div className="flex justify-center items-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          </div>
-        )}
-        {!loading && error && (
-          <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-            role="alert"
-          >
-            <strong className="font-bold">Error: </strong>
-            <span className="block sm:inline">{error}</span>
-          </div>
-        )}
-        {!loading && !error && (!bookings || bookings.length === 0) && (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No bookings found for this driver</p>
-          </div>
-        )}
-        {!loading && !error && bookings.length > 0 && (
-          <Card>
-            <CardContent className="p-0">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+      {/* Bookings Table */}
+      {loading && (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      )}
+      {!loading && error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+      {!loading && !error && (!bookings || bookings.length === 0) && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">No bookings found for this driver</p>
+        </div>
+      )}
+      {!loading && !error && bookings.length > 0 && (
+        <>
+          <div className="rounded-md border overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  {headers.map((header) => {
+                    return (
+                      <th
+                        key={header}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky top-0 bg-gray-50"
+                      >
+                        {header}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {bookings.map((booking) => (
+                  <tr
+                    key={booking._id}
+                    className={`hover:bg-muted/50 cursor-pointer ${
+                      booking._id === selectedBookingId ? "bg-blue-50" : ""
+                    }`}
+                    onClick={() => setSelectedBookingId(booking._id)}
+                  >
                     {headers.map((header) => {
-                      return (
-                        <th
-                          key={header}
-                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                        >
-                          {header}
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {bookings.map((booking) => (
-                    <tr
-                      key={booking._id}
-                      className={`hover:bg-muted/50 cursor-pointer ${
-                        booking._id === selectedBookingId ? "bg-blue-50" : ""
-                      }`}
-                      onClick={() => setSelectedBookingId(booking._id)}
-                    >
-                      {headers.map((header) => {
-                        // Handle special columns
-                        if (header === "Status") {
-                          return (
-                            <td
-                              key={`${booking._id}-${header}`}
-                              className="px-6 py-4 whitespace-nowrap text-sm"
-                            >
-                              {booking.status === 1 ? (
-                                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                                  Settled
-                                </Badge>
-                              ) : booking.status === 0 ? (
-                                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
-                                  Not Settled
-                                </Badge>
-                              ) : (
-                                <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                                  Status: {booking.status}
-                                </Badge>
-                              )}
-                            </td>
-                          );
-                        }
-                        
-                        if (header === "Labels") {
-                          return (
-                            <td
-                              key={`${booking._id}-${header}`}
-                              className="px-6 py-4 whitespace-nowrap text-sm"
-                            >
-                              {booking.labels && booking.labels.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {booking.labels.map((label) => (
-                                    <Badge
-                                      key={label._id}
-                                      style={{ backgroundColor: label.color }}
-                                      className="text-white text-xs"
-                                    >
-                                      {label.name}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-400 text-xs">No labels</span>
-                              )}
-                            </td>
-                          );
-                        }
-                        
-                        if (header === "Actions") {
-                          return (
-                            <td
-                              key={`${booking._id}-${header}`}
-                              className="px-6 py-4 whitespace-nowrap text-sm"
-                            >
-                              <div className="flex gap-2">
+                      // Handle special columns
+                      if (header === "Status") {
+                        return (
+                          <td
+                            key={`${booking._id}-${header}`}
+                            className="px-6 py-4 whitespace-nowrap text-sm"
+                          >
+                            {booking.status === 1 ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                Settled
+                              </Badge>
+                            ) : booking.status === 0 ? (
+                              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                                Not Settled
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+                                Status: {booking.status}
+                              </Badge>
+                            )}
+                          </td>
+                        );
+                      }
+                      
+                      if (header === "Labels") {
+                        return (
+                          <td
+                            key={`${booking._id}-${header}`}
+                            className="px-6 py-4 whitespace-nowrap text-sm"
+                          >
+                            {booking.labels && booking.labels.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {booking.labels.map((label) => (
+                                  <Badge
+                                    key={label._id}
+                                    style={{ backgroundColor: label.color }}
+                                    className="text-white text-xs"
+                                  >
+                                    {label.name}
+                                  </Badge>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-xs">No labels</span>
+                            )}
+                          </td>
+                        );
+                      }
+                      
+                      if (header === "Actions") {
+                        return (
+                          <td
+                            key={`${booking._id}-${header}`}
+                            className="px-6 py-4 whitespace-nowrap text-sm"
+                          >
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openLabelModal(booking);
+                                }}
+                                className="flex items-center gap-1"
+                              >
+                                <Tags className="w-3 h-3" />
+                                Labels
+                              </Button>
+                              {booking.primaryExpense || booking.receiving ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    openLabelModal(booking);
+                                    navigate(`/booking/${booking._id}`);
                                   }}
-                                  className="flex items-center gap-1"
                                 >
-                                  <Tags className="w-3 h-3" />
-                                  Labels
+                                  Details
                                 </Button>
-                                {booking.primaryExpense || booking.receiving ? (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/booking/${booking._id}`);
-                                    }}
-                                  >
-                                    Details
-                                  </Button>
-                                ) : null}
-                              </div>
-                            </td>
-                          );
-                        }
-
-                        // Regular column handling
-                        const dataItem = booking.data?.find(
-                          (item) => item.key === header
-                        );
-                        let value: unknown = dataItem ? dataItem.value : undefined;
-                        if (value === undefined) {
-                          const getVal = (obj: unknown, key: string) =>
-                            obj &&
-                            typeof obj === "object" &&
-                            key in (obj as Record<string, unknown>)
-                              ? (obj as Record<string, unknown>)[key]
-                              : undefined;
-                          if (booking.primaryExpense) {
-                            const direct = getVal(booking.primaryExpense, header);
-                            if (direct !== undefined) value = direct;
-                            else if (booking.primaryExpense.receiving) {
-                              const nested = getVal(
-                                booking.primaryExpense.receiving,
-                                header
-                              );
-                              if (nested !== undefined) value = nested;
-                            }
-                          }
-                          if (value === undefined && booking.receiving) {
-                            const rVal = getVal(booking.receiving, header);
-                            if (rVal !== undefined) value = rVal;
-                          }
-                        }
-                        const display =
-                          value === null || value === undefined || value === ""
-                            ? "-"
-                            : String(value);
-                        return (
-                          <td
-                            key={`${booking._id}-${header}`}
-                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                          >
-                            {display}
+                              ) : null}
+                            </div>
                           </td>
                         );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                      }
+
+                      // Regular column handling
+                      const dataItem = booking.data?.find(
+                        (item) => item.key === header
+                      );
+                      let value: unknown = dataItem ? dataItem.value : undefined;
+                      if (value === undefined) {
+                        const getVal = (obj: unknown, key: string) =>
+                          obj &&
+                          typeof obj === "object" &&
+                          key in (obj as Record<string, unknown>)
+                            ? (obj as Record<string, unknown>)[key]
+                            : undefined;
+                        if (booking.primaryExpense) {
+                          const direct = getVal(booking.primaryExpense, header);
+                          if (direct !== undefined) value = direct;
+                          else if (booking.primaryExpense.receiving) {
+                            const nested = getVal(
+                              booking.primaryExpense.receiving,
+                              header
+                            );
+                            if (nested !== undefined) value = nested;
+                          }
+                        }
+                        if (value === undefined && booking.receiving) {
+                          const rVal = getVal(booking.receiving, header);
+                          if (rVal !== undefined) value = rVal;
+                        }
+                      }
+                      const display =
+                        value === null || value === undefined || value === ""
+                          ? "-"
+                          : String(value);
+                      return (
+                        <td
+                          key={`${booking._id}-${header}`}
+                          className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                        >
+                          {display}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {totalItems > itemsPerPage && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                {Math.min(currentPage * itemsPerPage, totalItems)} of{" "}
+                {totalItems} bookings
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+
+                {getVisiblePages().map((page, index) =>
+                  page === "..." ? (
+                    <Button
+                      key={`ellipsis-${index}`}
+                      variant="outline"
+                      size="sm"
+                      disabled
+                    >
+                      ...
+                    </Button>
+                  ) : (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => goToPage(page as number)}
+                    >
+                      {page}
+                    </Button>
+                  )
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
       
       {/* Label Assignment Modal */}
       <Dialog open={isLabelModalOpen} onOpenChange={setIsLabelModalOpen}>

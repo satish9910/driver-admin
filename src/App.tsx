@@ -55,6 +55,7 @@ import { SubAdminWalletManagement } from "./components/pages/SubAdminPage";
 import DriverBookingsTable from "./components/pages/DriverBookingsTable";
 import BookingDetailPage from "./components/pages/BookingDetailPage";
 import { LabelManagement } from "./components/label/Label";
+import UnassignedBookings from "./components/bookings/UnassignedBookings";
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,7 @@ const adminSectionTitles = {
   pages: { title: "Static Pages", subtitle: "Manage website content pages" },
   settings: { title: "Settings", subtitle: "Configure platform settings" },
   notifications: { title: "Notifications", subtitle: "Manage user notifications" },
+  "unassigned-bookings": { title: "Unassigned Bookings", subtitle: "View and assign unassigned bookings" },
 };
 
 const adminSectionRoutes = [
@@ -98,6 +100,7 @@ const adminSectionRoutes = [
   { path: "/labels", key: "labels", element: <LabelManagement /> },
   { path: "/sub-admin", key: "vendors", element: <SubAdminManagement /> },
   { path: "/bookings", key: "bookings", element: <BookingManagement /> },
+  { path: "/unassigned-bookings", key: "unassigned-bookings", element: <UnassignedBookings /> },
   { path: "/deliveryPartners", key: "deliveryPartners", element: <DeliveryManagement /> },
   { path: "/pendingPartners", key: "pendingPartners", element: <PendingDelivery /> },
   { path: "/meals", key: "products", element: <MealManagement /> },
