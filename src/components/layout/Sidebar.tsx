@@ -15,6 +15,9 @@ import {
   LogOut,
   User,
   Car,
+  UserCheck,
+  Building,
+  Factory,
 } from "lucide-react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
@@ -26,23 +29,10 @@ interface SidebarProps {
 
 const allSidebarItems = [
   { id: "dashboard", label: "Dashboard", icon: BarChart3, permission: null },
-  { id: "wallet", label: "Wallet", icon: Image, permission: null },
-  { id: "labels", label: "Labels", icon: Image, permission: "manage_labels" },
-  { id: "drivers", label: "Drivers", icon: Users, permission: "manage_drivers" },
-  { id: "sub-admin", label: "Sub Admin", icon: Store, permission: "manage_subadmins" },
-  { id: "bookings", label: "Bookings", icon: ShoppingCart, permission: "manage_bookings" },
-  // { id: "deliveryPartners", label: "Delivery Partners", icon: Users, permission: "manage_delivery" },
-  // { id: "pendingPartners", label: "Pending Partners", icon: Users, permission: "manage_delivery" },
-  // { id: "meals", label: "Meals", icon: Package, permission: "manage_meals" },
-  // { id: "addproducts", label: "Add Meal", icon: Package, permission: "manage_meals" },
-  // { id: "orders", label: "Orders", icon: ShoppingCart, permission: "manage_orders" },
-  // { id: "subcategories", label: "Sub Categories", icon: Image, permission: "manage_categories" },
-  // { id: "sub-sub-categories", label: "Sub Sub Categories", icon: Image, permission: "manage_categories" },
-  // { id: "banners", label: "Banners", icon: Image, permission: "manage_banners" },
-  { id: "transactions", label: "Account", icon: ShoppingCart, permission: null },
-  // { id: "pages", label: "Static Pages", icon: Image, permission: "manage_pages" },
-  // { id: "settings", label: "Settings", icon: Settings, permission: "manage_settings" },
-  // { id: "notification", label: "Notifications", icon: Settings, permission: "manage_notifications" },
+  // Admin specific sections
+  { id: "job-seekers", label: "Job Seekers", icon: UserCheck, permission: null },
+  { id: "employers", label: "Employers", icon: Building, permission: null },
+  { id: "industries", label: "Industries", icon: Factory, permission: null },
 ];
 
 export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
@@ -66,7 +56,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
         const parsedUser = JSON.parse(decodeURIComponent(userData));
         setUser(parsedUser);
         
-        if (parsedUser.role === "admin") {
+        if (parsedUser.role === "superadmin") {
           setFilteredItems(allSidebarItems);
         } else {
           setFilteredItems(allSidebarItems.filter(item => 
@@ -115,7 +105,7 @@ export function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
             {(!isCollapsed || isMobile) && (
               <div className="flex items-center justify-center space-x-2">
                 <Car className="h-6 w-6 text-gray-500" />
-                <h1 className="text-lg font-semibold text-gray-900">Drivero</h1>
+                <h1 className="text-lg font-semibold text-gray-900">Job Portal</h1>
               </div>
             )}
             {!isMobile && (

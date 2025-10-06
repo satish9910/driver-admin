@@ -14,7 +14,7 @@ export const AdminRoute = () => {
   
   try {
     const user = userData ? JSON.parse(decodeURIComponent(userData)) : null;
-    if (user && (user.role === "admin" || user.role === "subadmin")) {
+    if (user && (user.role === "superadmin" || user.role === "subadmin")) {
       return <Outlet />;
     }
   } catch (e) {
@@ -33,7 +33,7 @@ export const PermissionRoute = ({ requiredPermission, children }) => {
   try {
     const user = userData ? JSON.parse(decodeURIComponent(userData)) : null;
     
-    if (user?.role === "admin") return <Outlet />;
+    if (user?.role === "superadmin") return <Outlet />;
     if (user?.role === "subadmin" && user.permissions?.includes(requiredPermission)) {
       return <Outlet />;
     }

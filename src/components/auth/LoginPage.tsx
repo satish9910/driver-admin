@@ -20,58 +20,60 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError("");
+ const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setError("");
 
-    try {
-      const formData = new URLSearchParams();
-      formData.append("email", email);
-      formData.append("password", password);
+  try {
+    const formData = new URLSearchParams();
+    formData.append("email", email);
+    formData.append("password", password);
 
-      const response = await axios.post(
-        `${import.meta.env.VITE_BASE_UR}public/admin-login`,
-        formData,
-        {
-          headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-
-      const data = response.data;
-
-      // const data = await response.json();
-
-      if (response.status === 200 && data.token) {
-        // Save token in cookies
-        Cookies.set("admin_token", data.token, {
-          expires: rememberMe ? 7 : undefined,
-        });
-        Cookies.set("user_role", "admin", {
-          expires: rememberMe ? 7 : undefined,
-        });
-
-        // Save admin data in cookies if needed
-        if (data.admin) {
-          Cookies.set("user_data", JSON.stringify(data.admin), {
-            expires: rememberMe ? 7 : undefined,
-          });
-        }
-
-        // Redirect to dashboard
-        toast.success("Login successful!");
-        navigate("/dashboard");
-      } else {
-        setError(data?.message || "Invalid credentials.");
-        toast.error(data?.message || "Invalid credentials.");
+    const response = await axios.post(
+      `${import.meta.env.VITE_BASE_UR}auth/admin-login`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       }
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong.");
-      toast.error("Something went wrong.");
+    );
+
+    const data = response.data;
+    console.log(data);
+
+    if (response.status === 200 && data.token) {
+      // Save token
+      Cookies.set("admin_token", data.token, {
+        expires: rememberMe ? 7 : undefined,
+      });
+
+      // Save user role (superadmin now)
+      Cookies.set("user_role", data.user?.role || "superadmin", {
+        expires: rememberMe ? 7 : undefined,
+      });
+
+      // Save full user object
+      if (data.user) {
+        Cookies.set("user_data", JSON.stringify(data.user), {
+          expires: rememberMe ? 7 : undefined,
+        });
+      }
+
+      toast.success("Login successful!");
+      navigate("/dashboard");
+      console.log("Login successful!"); 
+    } else {
+      setError(data?.message || "Invalid credentials.");
+      toast.error(data?.message || "Invalid credentials.");
     }
-  };
+  } catch (err) {
+    console.error(err);
+    setError("Something went wrong.");
+    toast.error("Something went wrong.");
+  }
+};
+
 
   return (
     <>
